@@ -1,5 +1,6 @@
 {-# LANGUAGE EmptyCase, ScopedTypeVariables #-}
-module Control.Subcategory.Alternative where
+module Control.Subcategory.Alternative
+  (CAlternative(..), CChoice(..), CAlt(..)) where
 import Control.Subcategory.Functor
 
 import qualified Control.Applicative             as App

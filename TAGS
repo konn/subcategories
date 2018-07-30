@@ -42,40 +42,41 @@ class    (CBind f, CPointed f) => CMonad CMonad142,143
 creturn creturn145,146
 creturn creturn146,147
 
-./src/Control/Subcategory/Applicative.hs,618
+./src/Control/Subcategory/Applicative.hs,653
 module Control.Subcategory.ApplicativeControl.Subcategory.Applicative1,2
-class CFunctor f => CApplicative CApplicative30,31
-               => f f43,44
-  pair pair31,32
-  pair pair33,34
-  (<.>)<.>34,35
-  (<(36,37
-  (.>).>37,38
-  (<.)<.41,42
-defaultLeftApply defaultLeftApply46,47
-defaultLeftApply defaultLeftApply48,49
-defaultRightApply defaultRightApply49,50
-defaultRightApply defaultRightApply51,52
-instance instance53,54
-class Cat f (g a -> g b) => CatOver CatOver87,88
-newtype CApp CApp154,155
-newtype CApp f a = CApp CApp154,155
-newtype CApp f a = CApp { runCApp runCApp154,155
+class CFunctor f => CApplicative CApplicative31,32
+               => f f44,45
+  pair pair32,33
+  pair pair34,35
+  (<.>)<.>35,36
+  (<(37,38
+  (.>).>38,39
+  (<.)<.42,43
+defaultLeftApply defaultLeftApply47,48
+defaultLeftApply defaultLeftApply49,50
+defaultRightApply defaultRightApply50,51
+defaultRightApply defaultRightApply52,53
+instance instance54,55
+class Cat f (g a -> g b) => CatOver CatOver88,89
+newtype CApp CApp155,156
+newtype CApp f a = CApp CApp155,156
+newtype CApp f a = CApp { runCApp runCApp155,156
+  CApp a `mappend`mappend165,166
 
-./src/Control/Subcategory/Alternative.hs,490
-module Control.Subcategory.Alternative Control.Subcategory.Alternative1,2
-class CFunctor f => CChoice CChoice24,25
-  default (<!>) :: App.Alternative f => f f26,27
-  (<!>)<!>25,26
-  (<(27,28
-instance instance34,35
-class CChoice f => CAlternative CAlternative74,75
-  default cempty :: App.Alternative f => f f76,77
-  cempty cempty75,76
-  cempty cempty77,78
-newtype CAlt CAlt111,112
-newtype CAlt f a = CAlt CAlt111,112
-newtype CAlt f a = CAlt { runAlt runAlt111,112
+./src/Control/Subcategory/Alternative.hs,489
+module Control.Subcategory.AlternativeControl.Subcategory.Alternative1,2
+class CFunctor f => CChoice CChoice25,26
+  default (<!>) :: App.Alternative f => f f27,28
+  (<!>)<!>26,27
+  (<(28,29
+instance instance35,36
+class CChoice f => CAlternative CAlternative75,76
+  default cempty :: App.Alternative f => f f77,78
+  cempty cempty76,77
+  cempty cempty78,79
+newtype CAlt CAlt112,113
+newtype CAlt f a = CAlt CAlt112,113
+newtype CAlt f a = CAlt { runAlt runAlt112,113
 
 ./src/Control/Subcategory/Functor.hs,838
 module Control.Subcategory.FunctorControl.Subcategory.Functor1,2

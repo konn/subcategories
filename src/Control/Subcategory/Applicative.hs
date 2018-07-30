@@ -3,6 +3,7 @@ module Control.Subcategory.Applicative
   ( CApplicative(..), defaultRightApply, defaultLeftApply, CApp(..)
   ) where
 import Control.Subcategory.Functor
+import Control.Subcategory.Pointed
 
 import qualified Control.Applicative             as App
 import qualified Control.Monad.ST.Lazy           as LST
@@ -17,7 +18,7 @@ import qualified Data.HashSet                    as HS
 import qualified Data.IntMap                     as IM
 import           Data.List.NonEmpty              (NonEmpty)
 import qualified Data.Map                        as Map
-import           Data.Semigroup                  (Semigroup ((<>)))
+import           Data.Monoid                     (Monoid (..))
 import           Data.Semigroup                  (Semigroup ((<>)))
 import qualified Data.Semigroup                  as Sem
 import qualified Data.Sequence                   as Seq
@@ -159,3 +160,8 @@ newtype CApp f a = CApp { runCApp :: f a }
 instance (Cat f a, CApplicative f, Semigroup a, Cat f (a, a))
        => Semigroup (CApp f a) where
   CApp a <> CApp b = CApp $ uncurry (<>) <$:> pair a b
+
+instance (Cat f a, CPointed f, CApplicative f, Monoid a, Cat f (a, a))
+       => Monoid (CApp f a) where
+  CApp a `mappend` CApp b = CApp $ uncurry mappend <$:> pair a b
+  mempty = CApp $ cpure mempty
