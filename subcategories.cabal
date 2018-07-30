@@ -1,0 +1,91 @@
+-- This file has been generated from package.yaml by hpack version 0.28.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: c6a7330aa0534902217e4af910e182cd8b0351bb82b291f7aab5510c1daeeded
+
+name:           subcategories
+version:        0.1.0.0
+synopsis:       Subcategories induced by class constraints
+description:    Please see the README on GitHub at <https://github.com/konn/subcategories#readme>
+category:       Data
+homepage:       https://github.com/konn/subcategories#readme
+bug-reports:    https://github.com/konn/subcategories/issues
+author:         Hiromi ISHII
+maintainer:     konn.jinro _at_ gmail.com
+copyright:      2018 (c) Hiromi ISHII
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+extra-source-files:
+    ChangeLog.md
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/konn/subcategories
+
+library
+  exposed-modules:
+      Control.Subcategory.Alternative
+      Control.Subcategory.Functor
+      Control.Subcategory.Pointed
+      Lib
+  other-modules:
+      Paths_subcategories
+  hs-source-dirs:
+      src
+  default-extensions: ConstraintKinds DataKinds DefaultSignatures DerivingStrategies FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures MultiParamTypeClasses PolyKinds ScopedTypeVariables TypeApplications TypeFamilies TypeInType UndecidableInstances
+  ghc-options: -Wall
+  build-depends:
+      base >=4.7 && <5
+    , constraints
+    , containers
+    , data-default
+    , hashable
+    , mono-traversable
+    , pointed
+    , unordered-containers
+  default-language: Haskell2010
+
+executable subcategories-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_subcategories
+  hs-source-dirs:
+      app
+  default-extensions: ConstraintKinds DataKinds DefaultSignatures DerivingStrategies FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures MultiParamTypeClasses PolyKinds ScopedTypeVariables TypeApplications TypeFamilies TypeInType UndecidableInstances
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , constraints
+    , containers
+    , data-default
+    , hashable
+    , mono-traversable
+    , pointed
+    , subcategories
+    , unordered-containers
+  default-language: Haskell2010
+
+test-suite subcategories-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_subcategories
+  hs-source-dirs:
+      test
+  default-extensions: ConstraintKinds DataKinds DefaultSignatures DerivingStrategies FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures MultiParamTypeClasses PolyKinds ScopedTypeVariables TypeApplications TypeFamilies TypeInType UndecidableInstances
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , constraints
+    , containers
+    , data-default
+    , hashable
+    , mono-traversable
+    , pointed
+    , subcategories
+    , unordered-containers
+  default-language: Haskell2010

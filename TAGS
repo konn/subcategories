@@ -1,0 +1,123 @@
+
+./Setup.hs,15
+main main1,2
+
+./app/Main.hs,52
+module Main Main0,1
+main main4,5
+main main5,6
+
+./test/Spec.hs,30
+main main0,1
+main main1,2
+
+./src/Lib.hs,65
+module LibLib0,1
+someFunc someFunc4,5
+someFunc someFunc5,6
+
+./src/Control/Subcategory/Pointed.hs,424
+module Control.Subcategory.Pointed Control.Subcategory.Pointed1,2
+class CFunctor f => CPointed CPointed29,30
+  default cpure :: App.Applicative f => a a31,32
+  cpure cpure30,31
+  cpure cpure32,33
+newtype WrapPointed WrapPointed34,35
+newtype WrapPointed f a = WrapApplicative WrapApplicative34,35
+newtype WrapPointed f a = WrapApplicative { runWrapApplicative runWrapApplicative34,35
+instance instance38,39
+
+./src/Control/Subcategory/Bind.hs,384
+module Control.Subcategory.BindControl.Subcategory.Bind0,1
+class CFunctor m => CBind CBind27,28
+  cjoin :: (Cat m (m a), Cat m a) => m m31,32
+  (>>-)>>-28,29
+  m m30,31
+  cjoin cjoin31,32
+  cjoin cjoin32,33
+instance instance34,35
+(-<<)-<<130,131
+(-(131,132
+class    (CBind f, CPointed f) => CMonad CMonad141,142
+creturn creturn144,145
+creturn creturn145,146
+
+./src/Control/Subcategory/Applicative.hs,618
+module Control.Subcategory.ApplicativeControl.Subcategory.Applicative1,2
+class CFunctor f => CApplicative CApplicative28,29
+               => f f41,42
+  pair pair29,30
+  pair pair31,32
+  (<.>)<.>32,33
+  (<(34,35
+  (.>).>35,36
+  (<.)<.39,40
+defaultLeftApply defaultLeftApply44,45
+defaultLeftApply defaultLeftApply46,47
+defaultRightApply defaultRightApply47,48
+defaultRightApply defaultRightApply49,50
+instance instance51,52
+class Cat f (g a -> g b) => CatOver CatOver85,86
+newtype CApp CApp152,153
+newtype CApp f a = CApp CApp152,153
+newtype CApp f a = CApp { runCApp runCApp152,153
+
+./src/Control/Subcategory/Alternative.hs,490
+module Control.Subcategory.Alternative Control.Subcategory.Alternative1,2
+class CFunctor f => CChoice CChoice23,24
+  default (<!>) :: App.Alternative f => f f25,26
+  (<!>)<!>24,25
+  (<(26,27
+instance instance33,34
+class CChoice f => CAlternative CAlternative73,74
+  default cempty :: App.Alternative f => f f75,76
+  cempty cempty74,75
+  cempty cempty76,77
+newtype CAlt CAlt110,111
+newtype CAlt f a = CAlt CAlt110,111
+newtype CAlt f a = CAlt { runAlt runAlt110,111
+
+./src/Control/Subcategory/Productive.hs,186
+module Control.Subcategory.Productive Control.Subcategory.Productive0,1
+class Productive Productive5,6
+  pair :: (c a, c b) => Dict Dict6,7
+  pair pair6,7
+instance instance8,9
+
+./src/Control/Subcategory/Functor.hs,838
+module Control.Subcategory.FunctorControl.Subcategory.Functor1,2
+class CFunctor CFunctor43,44
+  default (<$:) :: Functor f => a a52,53
+  type Cat Cat44,45
+  type Cat Cat45,46
+  type Cat f f45,46
+  emap emap47,48
+  emap emap49,50
+  (<$:)<$:51,52
+  (<(53,54
+defaultEmapConst defaultEmapConst56,57
+defaultEmapConst defaultEmapConst57,58
+newtype WrapFunctor WrapFunctor60,61
+newtype WrapFunctor f a = WrapFunctor WrapFunctor60,61
+newtype WrapFunctor f a = WrapFunctor { runFunctor runFunctor60,61
+instance instance63,64
+data WrapMono WrapMono149,150
+  WrapMono WrapMono150,151
+  WrapMono :: {unwrapMono unwrapMono150,151
+data WrapIntContainer WrapIntContainer159,160
+  WrapIntContainer WrapIntContainer160,161
+  WrapIntContainer :: {unwrapIntContainer unwrapIntContainer160,161
+(<$:>)<$:>196,197
+
+./src/Control/Subcategory/RebindableSyntax.hs,225
+module Control.Subcategory.RebindableSyntaxControl.Subcategory.RebindableSyntax1,2
+ifThenElse ifThenElse16,17
+ifThenElse ifThenElse17,18
+(>(21,22
+(>>=>>=21,22
+(>>)>>26,27
+return return31,32
+return return32,33
+
+./src/Control/Subcategory.hs,51
+module Control.SubcategoryControl.Subcategory0,1

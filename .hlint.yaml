@@ -1,0 +1,21 @@
+- extensions:
+    - name:
+      - ConstraintKinds
+      - DataKinds
+      - DefaultSignatures
+      - DerivingStrategies
+      - FlexibleContexts
+      - FlexibleInstances
+      - GADTs
+      - GeneralizedNewtypeDeriving
+      - InstanceSigs
+      - KindSignatures
+      - MultiParamTypeClasses
+      - PolyKinds
+      - ScopedTypeVariables
+      - TypeApplications
+      - TypeFamilies
+      - TypeInType
+      - UndecidableInstances
+
+- ignore: {name: "Use fewer imports"}
