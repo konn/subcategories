@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c6a7330aa0534902217e4af910e182cd8b0351bb82b291f7aab5510c1daeeded
+-- hash: 072c306ef7d1a632b382b50fdc90addc5302e64ea16f9d3538eec6f8434f90c6
 
 name:           subcategories
 version:        0.1.0.0
@@ -28,9 +28,13 @@ source-repository head
 
 library
   exposed-modules:
+      Control.Subcategory
       Control.Subcategory.Alternative
+      Control.Subcategory.Applicative
+      Control.Subcategory.Bind
       Control.Subcategory.Functor
       Control.Subcategory.Pointed
+      Control.Subcategory.RebindableSyntax
       Lib
   other-modules:
       Paths_subcategories
@@ -40,7 +44,6 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
-    , constraints
     , containers
     , data-default
     , hashable
@@ -59,7 +62,6 @@ executable subcategories-exe
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , constraints
     , containers
     , data-default
     , hashable
@@ -80,7 +82,6 @@ test-suite subcategories-test
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , constraints
     , containers
     , data-default
     , hashable

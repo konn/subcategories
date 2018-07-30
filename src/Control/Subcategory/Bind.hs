@@ -17,6 +17,7 @@ import qualified Data.IntSet                     as IS
 import           Data.List.NonEmpty              (NonEmpty)
 import qualified Data.Map                        as Map
 import           Data.MonoTraversable
+import           Data.Semigroup                  (Semigroup ((<>)))
 import qualified Data.Semigroup                  as Sem
 import qualified Data.Sequence                   as Seq
 import qualified Data.Set                        as Set

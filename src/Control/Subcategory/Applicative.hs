@@ -1,6 +1,6 @@
 {-# LANGUAGE EmptyCase, TupleSections, UndecidableSuperClasses #-}
 module Control.Subcategory.Applicative
-  ( CApplicative(..), defaultRightApply, defaultLeftApply
+  ( CApplicative(..), defaultRightApply, defaultLeftApply, CApp(..)
   ) where
 import Control.Subcategory.Functor
 
@@ -17,6 +17,8 @@ import qualified Data.HashSet                    as HS
 import qualified Data.IntMap                     as IM
 import           Data.List.NonEmpty              (NonEmpty)
 import qualified Data.Map                        as Map
+import           Data.Semigroup                  (Semigroup ((<>)))
+import           Data.Semigroup                  (Semigroup ((<>)))
 import qualified Data.Semigroup                  as Sem
 import qualified Data.Sequence                   as Seq
 import qualified Data.Set                        as Set

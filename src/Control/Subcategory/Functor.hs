@@ -25,8 +25,9 @@ import           Data.List.NonEmpty              (NonEmpty)
 import qualified Data.Map                        as Map
 import qualified Data.Monoid                     as Mon
 import           Data.MonoTraversable            (Element, MonoFunctor (..))
-import           Data.Ord                        (Down)
+import           Data.Ord                        (Down (..))
 import           Data.Proxy                      (Proxy)
+import           Data.Semigroup                  (Semigroup ((<>)))
 import qualified Data.Semigroup                  as Sem
 import qualified Data.Sequence                   as Seq
 import qualified Data.Set                        as Set
@@ -77,7 +78,11 @@ instance CFunctor Par1
 instance CFunctor NonEmpty
 instance CFunctor ReadP
 instance CFunctor ReadPrec
-instance CFunctor Down
+instance CFunctor Down where
+  emap f (Down a) = Down $ f a
+  {-# INLINE emap #-}
+  (<$:) = defaultEmapConst
+  {-# INLINE (<$:) #-}
 instance CFunctor Mon.Product
 instance CFunctor Mon.Sum
 instance CFunctor Mon.Dual
@@ -165,6 +170,10 @@ instance (b ~ Element a, Semigroup a) => Semigroup (WrapIntContainer a b) where
 
 instance (b ~ Element a, Monoid a) => Monoid (WrapIntContainer a b) where
   mempty = WrapIntContainer mempty
+  {-# INLINE mempty #-}
+  mappend (WrapIntContainer a) (WrapIntContainer b) =
+    WrapIntContainer $ a `mappend` b
+  {-# INLINE mappend #-}
 
 instance CFunctor (WrapIntContainer IS.IntSet) where
   type Cat (WrapIntContainer IS.IntSet) b = b ~ Int
