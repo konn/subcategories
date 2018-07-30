@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 072c306ef7d1a632b382b50fdc90addc5302e64ea16f9d3538eec6f8434f90c6
+-- hash: 823a7ca15afab36ad09733dab34bd54bccab4ae7ffc44614ae74e4e21df577c6
 
 name:           subcategories
 version:        0.1.0.0
@@ -31,6 +31,7 @@ library
       Control.Subcategory
       Control.Subcategory.Alternative
       Control.Subcategory.Applicative
+      Control.Subcategory.Applicative.Class
       Control.Subcategory.Bind
       Control.Subcategory.Functor
       Control.Subcategory.Pointed

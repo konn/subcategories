@@ -16,6 +16,17 @@ module LibLib0,1
 someFunc someFunc4,5
 someFunc someFunc5,6
 
+./src/Control/Subcategory/Alternative/Class.hs,359
+module Control.Subcategory.Alternative.ClassControl.Subcategory.Alternative.Class1,2
+class CFunctor f => CChoice CChoice8,9
+  default (<!>) :: App.Alternative f => f f10,11
+  (<!>)<!>9,10
+  (<(11,12
+class CChoice f => CAlternative CAlternative14,15
+  default cempty :: App.Alternative f => f f16,17
+  cempty cempty15,16
+  cempty cempty17,18
+
 ./src/Control/Subcategory/Pointed.hs,424
 module Control.Subcategory.Pointed Control.Subcategory.Pointed1,2
 class CFunctor f => CPointed CPointed29,30
@@ -42,41 +53,39 @@ class    (CBind f, CPointed f) => CMonad CMonad142,143
 creturn creturn145,146
 creturn creturn146,147
 
-./src/Control/Subcategory/Applicative.hs,653
-module Control.Subcategory.ApplicativeControl.Subcategory.Applicative1,2
-class CFunctor f => CApplicative CApplicative31,32
-               => f f44,45
-  pair pair32,33
-  pair pair34,35
-  (<.>)<.>35,36
-  (<(37,38
-  (.>).>38,39
-  (<.)<.42,43
-defaultLeftApply defaultLeftApply47,48
-defaultLeftApply defaultLeftApply49,50
-defaultRightApply defaultRightApply50,51
-defaultRightApply defaultRightApply52,53
-instance instance54,55
-class Cat f (g a -> g b) => CatOver CatOver88,89
-newtype CApp CApp155,156
-newtype CApp f a = CApp CApp155,156
-newtype CApp f a = CApp { runCApp runCApp155,156
-  CApp a `mappend`mappend165,166
+./src/Control/Subcategory/Applicative/Class.hs,267
+module Control.Subcategory.Applicative.Class Control.Subcategory.Applicative.Class1,2
+class CFunctor f => CApplicative CApplicative7,8
+               => f f20,21
+  pair pair8,9
+  pair pair10,11
+  (<.>)<.>11,12
+  (<(13,14
+  (.>).>14,15
+  (<.)<.18,19
 
-./src/Control/Subcategory/Alternative.hs,489
-module Control.Subcategory.AlternativeControl.Subcategory.Alternative1,2
-class CFunctor f => CChoice CChoice25,26
-  default (<!>) :: App.Alternative f => f f27,28
-  (<!>)<!>26,27
-  (<(28,29
-instance instance35,36
-class CChoice f => CAlternative CAlternative75,76
-  default cempty :: App.Alternative f => f f77,78
-  cempty cempty76,77
-  cempty cempty78,79
-newtype CAlt CAlt115,116
-newtype CAlt f a = CAlt CAlt115,116
-newtype CAlt f a = CAlt { runAlt runAlt115,116
+./src/Control/Subcategory/Applicative.hs,470
+module Control.Subcategory.ApplicativeControl.Subcategory.Applicative2,3
+defaultLeftApply defaultLeftApply33,34
+defaultLeftApply defaultLeftApply35,36
+defaultRightApply defaultRightApply36,37
+defaultRightApply defaultRightApply38,39
+instance instance40,41
+class Cat f (g a -> g b) => CatOver CatOver74,75
+newtype CApp CApp141,142
+newtype CApp f a = CApp CApp141,142
+newtype CApp f a = CApp { runCApp runCApp141,142
+  CApp a `mappend`mappend153,154
+
+./src/Control/Subcategory/Alternative.hs,214
+module Control.Subcategory.AlternativeControl.Subcategory.Alternative2,3
+instance instance32,33
+newtype CAlt CAlt106,107
+newtype CAlt f a = CAlt CAlt106,107
+newtype CAlt f a = CAlt { runAlt runAlt106,107
+
+./src/Control/Subcategory/Bind/Class.hs,74
+module Control.Subcategory.Bind.Class Control.Subcategory.Bind.Class0,1
 
 ./src/Control/Subcategory/Functor.hs,838
 module Control.Subcategory.FunctorControl.Subcategory.Functor1,2

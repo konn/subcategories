@@ -1,7 +1,10 @@
 {-# LANGUAGE EmptyCase, TupleSections, UndecidableSuperClasses #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 module Control.Subcategory.Applicative
   ( CApplicative(..), defaultRightApply, defaultLeftApply, CApp(..)
   ) where
+import Control.Subcategory.Alternative.Class
+import Control.Subcategory.Applicative.Class
 import Control.Subcategory.Functor
 import Control.Subcategory.Pointed
 
@@ -27,23 +30,6 @@ import qualified Data.Tree                       as Tree
 import           GHC.Conc                        (STM)
 import           Text.ParserCombinators.ReadP    (ReadP)
 import           Text.ParserCombinators.ReadPrec (ReadPrec)
-
-infixl 4 <.>
-class CFunctor f => CApplicative f where
-  pair :: (Cat f a, Cat f b) => f a -> f b -> f (a, b)
-  default pair :: (Applicative f) => f a -> f b -> f (a, b)
-  pair = App.liftA2 (,)
-  (<.>) :: (Cat f a, Cat f b, Cat f (a -> b)) => f (a -> b) -> f a -> f b
-  default (<.>) :: (Applicative f) => f (a -> b) -> f a -> f b
-  (<.>) = (<*>)
-  (.>) :: (Cat f a, Cat f b) => f a -> f b -> f b
-  default (.>) :: Applicative f
-               => f a -> f b -> f b
-  (.>) = (*>)
-  (<.) :: (Cat f a, Cat f b) => f a -> f b -> f a
-  default (<.) :: Applicative f
-               => f a -> f b -> f a
-  (<.) = (<*)
 
 defaultLeftApply :: (Cat f (b1, b2), Cat f b1, Cat f b2, CApplicative f)
                  => f b1 -> f b2 -> f b1
@@ -155,7 +141,9 @@ instance CApplicative HS.HashSet where
 
 newtype CApp f a = CApp { runCApp :: f a }
   deriving (Read, Show, Eq, Ord)
-  deriving newtype (Functor, Applicative, CFunctor, CApplicative)
+  deriving newtype (Functor, Applicative, App.Alternative,
+                    CFunctor, CChoice, CAlternative,
+                    CApplicative, CPointed)
 
 instance (Cat f a, CApplicative f, Semigroup a, Cat f (a, a))
        => Semigroup (CApp f a) where

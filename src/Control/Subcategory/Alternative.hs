@@ -1,7 +1,11 @@
 {-# LANGUAGE EmptyCase, ScopedTypeVariables #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 module Control.Subcategory.Alternative
   (CAlternative(..), CChoice(..), CAlt(..)) where
+import Control.Subcategory.Alternative.Class
+import Control.Subcategory.Applicative.Class
 import Control.Subcategory.Functor
+import Control.Subcategory.Pointed
 
 import qualified Control.Applicative             as App
 import           Data.Coerce                     (coerce)
@@ -21,13 +25,6 @@ import qualified Data.Sequence                   as Seq
 import qualified Data.Set                        as Set
 import           Text.ParserCombinators.ReadP    (ReadP)
 import           Text.ParserCombinators.ReadPrec (ReadPrec)
-
-infixl 3 <!>
-class CFunctor f => CChoice f where
-  (<!>) :: Cat f a => f a -> f a -> f a
-  default (<!>) :: App.Alternative f => f a -> f a -> f a
-  (<!>) = (App.<|>)
-  {-# INLINE (<!>) #-}
 
 instance CChoice []
 instance CChoice Maybe
@@ -73,12 +70,6 @@ instance (Eq k, Hashable k) => CChoice (HM.HashMap k) where
   (<!>) = HM.union
   {-# INLINE (<!>) #-}
 
-class CChoice f => CAlternative f where
-  cempty :: Cat f a => f a
-  default cempty :: App.Alternative f => f a
-  cempty = App.empty
-  {-# INLINE cempty #-}
-
 instance CAlternative IM.IntMap where
   cempty = IM.empty
   {-# INLINE cempty #-}
@@ -115,7 +106,8 @@ instance CAlternative ReadPrec
 
 newtype CAlt f a = CAlt { runAlt :: f a }
   deriving newtype (Functor, Applicative, App.Alternative,
-                    CFunctor, CChoice, CAlternative)
+                    CFunctor, CChoice, CAlternative,
+                    CApplicative, CPointed)
 
 instance (Cat f a, CChoice f) => Sem.Semigroup (CAlt f a) where
   (<>) = coerce @(f a -> f a -> f a) (<!>)
