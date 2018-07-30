@@ -1,6 +1,6 @@
 module Control.Subcategory
   ( module Control.Subcategory.Applicative
-  , module Control.Subcategory.Applicative
+  , module Control.Subcategory.Alternative
   , module Control.Subcategory.Bind
   , module Control.Subcategory.Functor
   , module Control.Subcategory.Pointed
