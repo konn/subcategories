@@ -91,6 +91,9 @@ instance Ord k => CAlternative (Map.Map k) where
 instance CAlternative HS.HashSet where
   cempty = HS.empty
   {-# INLINE cempty #-}
+instance CAlternative Set.Set where
+  cempty = Set.empty
+  {-# INLINE cempty #-}
 instance CAlternative (WrapIntContainer IS.IntSet) where
   cempty = WrapIntContainer IS.empty
   {-# INLINE cempty #-}
