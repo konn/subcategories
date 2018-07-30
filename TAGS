@@ -74,9 +74,9 @@ class CChoice f => CAlternative CAlternative75,76
   default cempty :: App.Alternative f => f f77,78
   cempty cempty76,77
   cempty cempty78,79
-newtype CAlt CAlt112,113
-newtype CAlt f a = CAlt CAlt112,113
-newtype CAlt f a = CAlt { runAlt runAlt112,113
+newtype CAlt CAlt115,116
+newtype CAlt f a = CAlt CAlt115,116
+newtype CAlt f a = CAlt { runAlt runAlt115,116
 
 ./src/Control/Subcategory/Functor.hs,838
 module Control.Subcategory.FunctorControl.Subcategory.Functor1,2

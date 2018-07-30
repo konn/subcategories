@@ -122,3 +122,4 @@ instance (Cat f a, CChoice f) => Sem.Semigroup (CAlt f a) where
 
 instance (Cat f a, CAlternative f) => Monoid (CAlt f a) where
   mempty = coerce @(f a) cempty
+  mappend = coerce @(f a -> f a -> f a) (<!>)
