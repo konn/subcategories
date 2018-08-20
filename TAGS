@@ -1,126 +1,0 @@
-
-./Setup.hs,15
-main main1,2
-
-./app/Main.hs,52
-module Main Main0,1
-main main4,5
-main main5,6
-
-./test/Spec.hs,30
-main main0,1
-main main1,2
-
-./src/Lib.hs,65
-module LibLib0,1
-someFunc someFunc4,5
-someFunc someFunc5,6
-
-./src/Control/Subcategory/Alternative/Class.hs,359
-module Control.Subcategory.Alternative.ClassControl.Subcategory.Alternative.Class1,2
-class CFunctor f => CChoice CChoice8,9
-  default (<!>) :: App.Alternative f => f f10,11
-  (<!>)<!>9,10
-  (<(11,12
-class CChoice f => CAlternative CAlternative14,15
-  default cempty :: App.Alternative f => f f16,17
-  cempty cempty15,16
-  cempty cempty17,18
-
-./src/Control/Subcategory/Pointed.hs,424
-module Control.Subcategory.Pointed Control.Subcategory.Pointed1,2
-class CFunctor f => CPointed CPointed29,30
-  default cpure :: App.Applicative f => a a31,32
-  cpure cpure30,31
-  cpure cpure32,33
-newtype WrapPointed WrapPointed34,35
-newtype WrapPointed f a = WrapApplicative WrapApplicative34,35
-newtype WrapPointed f a = WrapApplicative { runWrapApplicative runWrapApplicative34,35
-instance instance38,39
-
-./src/Control/Subcategory/Bind.hs,384
-module Control.Subcategory.BindControl.Subcategory.Bind0,1
-class CFunctor m => CBind CBind28,29
-  cjoin :: (Cat m (m a), Cat m a) => m m32,33
-  (>>-)>>-29,30
-  m m31,32
-  cjoin cjoin32,33
-  cjoin cjoin33,34
-instance instance35,36
-(-<<)-<<131,132
-(-(132,133
-class    (CBind f, CPointed f) => CMonad CMonad142,143
-creturn creturn145,146
-creturn creturn146,147
-
-./src/Control/Subcategory/Applicative/Class.hs,267
-module Control.Subcategory.Applicative.Class Control.Subcategory.Applicative.Class1,2
-class CFunctor f => CApplicative CApplicative7,8
-               => f f20,21
-  pair pair8,9
-  pair pair10,11
-  (<.>)<.>11,12
-  (<(13,14
-  (.>).>14,15
-  (<.)<.18,19
-
-./src/Control/Subcategory/Applicative.hs,470
-module Control.Subcategory.ApplicativeControl.Subcategory.Applicative2,3
-defaultLeftApply defaultLeftApply33,34
-defaultLeftApply defaultLeftApply35,36
-defaultRightApply defaultRightApply36,37
-defaultRightApply defaultRightApply38,39
-instance instance40,41
-class Cat f (g a -> g b) => CatOver CatOver74,75
-newtype CApp CApp141,142
-newtype CApp f a = CApp CApp141,142
-newtype CApp f a = CApp { runCApp runCApp141,142
-  CApp a `mappend`mappend153,154
-
-./src/Control/Subcategory/Alternative.hs,214
-module Control.Subcategory.AlternativeControl.Subcategory.Alternative2,3
-instance instance32,33
-newtype CAlt CAlt106,107
-newtype CAlt f a = CAlt CAlt106,107
-newtype CAlt f a = CAlt { runAlt runAlt106,107
-
-./src/Control/Subcategory/Bind/Class.hs,74
-module Control.Subcategory.Bind.Class Control.Subcategory.Bind.Class0,1
-
-./src/Control/Subcategory/Functor.hs,838
-module Control.Subcategory.FunctorControl.Subcategory.Functor1,2
-class CFunctor CFunctor44,45
-  default (<$:) :: Functor f => a a53,54
-  type Cat Cat45,46
-  type Cat Cat46,47
-  type Cat f f46,47
-  emap emap48,49
-  emap emap50,51
-  (<$:)<$:52,53
-  (<(54,55
-defaultEmapConst defaultEmapConst57,58
-defaultEmapConst defaultEmapConst58,59
-newtype WrapFunctor WrapFunctor61,62
-newtype WrapFunctor f a = WrapFunctor WrapFunctor61,62
-newtype WrapFunctor f a = WrapFunctor { runFunctor runFunctor61,62
-instance instance64,65
-data WrapMono WrapMono154,155
-  WrapMono WrapMono155,156
-  WrapMono :: {unwrapMono unwrapMono155,156
-data WrapIntContainer WrapIntContainer164,165
-  WrapIntContainer WrapIntContainer165,166
-  WrapIntContainer :: {unwrapIntContainer unwrapIntContainer165,166
-(<$:>)<$:>205,206
-
-./src/Control/Subcategory/RebindableSyntax.hs,225
-module Control.Subcategory.RebindableSyntaxControl.Subcategory.RebindableSyntax1,2
-ifThenElse ifThenElse16,17
-ifThenElse ifThenElse17,18
-(>(21,22
-(>>=>>=21,22
-(>>)>>26,27
-return return31,32
-return return32,33
-
-./src/Control/Subcategory.hs,51
-module Control.SubcategoryControl.Subcategory0,1
