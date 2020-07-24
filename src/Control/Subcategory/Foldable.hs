@@ -1,9 +1,9 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE DefaultSignatures, DerivingVia, LambdaCase, StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell, TypeOperators                                 #-}
+{-# LANGUAGE CPP, DefaultSignatures, DerivingVia, LambdaCase    #-}
+{-# LANGUAGE StandaloneDeriving, TemplateHaskell, TypeOperators #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Control.Subcategory.Foldable where
-import           Control.Applicative                  (ZipList)
+import           Control.Applicative                  (ZipList, getZipList)
+import           Control.Monad
 import           Control.Subcategory.Applicative
 import           Control.Subcategory.Functor
 import           Control.Subcategory.Pointed
@@ -21,6 +21,7 @@ import qualified Data.IntMap.Strict                   as IM
 import qualified Data.IntSet                          as IS
 import           Data.Kind                            (Type)
 import           Data.List.NonEmpty                   (NonEmpty)
+import qualified Data.List.NonEmpty                   as NE
 import qualified Data.Map                             as M
 import           Data.Maybe                           (fromMaybe)
 import           Data.Monoid
@@ -33,9 +34,17 @@ import           Data.Semigroup                       (Arg, Max (..), Min (..),
                                                        Option)
 import qualified Data.Semigroup                       as Sem
 import qualified Data.Sequence                        as Seq
+import           Data.Sequences                       (IsSequence (indexEx))
+import qualified Data.Sequences                       as MT
 import qualified Data.Set                             as Set
+import qualified Data.Vector                          as V
+import qualified Data.Vector.Generic                  as G
+import qualified Data.Vector.Primitive                as P
+import qualified Data.Vector.Storable                 as S
+import qualified Data.Vector.Unboxed                  as U
 import           Foreign.Ptr                          (Ptr)
 import           GHC.Generics
+import           Language.Haskell.TH                  hiding (Type)
 
 -- See Note [Function coercion]
 (#.) :: Coercible b c => (b -> c) -> (a -> b) -> (a -> c)
@@ -100,6 +109,16 @@ class Constrained f => CFoldable f where
           Nothing -> y
           Just x  -> f x y
 
+  cindex :: Cat f a => f a -> Int -> a
+  cindex xs n = case cfoldl' go (Left' 0) xs of
+    Right' x -> x
+    Left'{} -> errorWithoutStackTrace $ "cindex: index out of bound " ++ show n
+    where
+      go (Left' i) x
+        | i == n = Right' x
+        | otherwise = Left' (i + 1)
+      go r@Right'{} _ = r
+
   cnull :: Cat f a => f a -> Bool
   cnull = cfoldr (const $ const False) True
 
@@ -151,6 +170,8 @@ class Constrained f => CFoldable f where
       {-# INLINE c #-}
       c x k = f x .> k
 
+data Eith' a b = Left' !a | Right' !b
+
 instance Foldable f => CFoldable (WrapFunctor f) where
   cfoldMap = foldMap
   {-# INLINE [1] cfoldMap #-}
@@ -199,6 +220,10 @@ instance Foldable f => CFoldable (WrapFunctor f) where
   ctraverse_ f tx = traverse_ f tx
   #-}
 
+{-# RULES
+"cindex/List"
+  cindex = (!!)
+  #-}
 deriving via WrapFunctor []
   instance CFoldable []
 deriving via WrapFunctor Maybe
@@ -213,10 +238,20 @@ deriving via WrapFunctor (HM.HashMap k)
   instance CFoldable (HM.HashMap k)
 deriving via WrapFunctor Seq.Seq
   instance CFoldable Seq.Seq
+{-# RULES
+"cindex/Seq"
+  cindex = Seq.index
+  #-}
+
 deriving via WrapFunctor Par1
   instance CFoldable Par1
 deriving via WrapFunctor NonEmpty
   instance CFoldable NonEmpty
+{-# RULES
+"cindex/NonEmpty"
+  cindex = (NE.!!)
+  #-}
+
 deriving via WrapFunctor Down
   instance CFoldable Down
 deriving via WrapFunctor Mon.Last
@@ -231,6 +266,11 @@ deriving via WrapFunctor Identity
   instance CFoldable Identity
 deriving via WrapFunctor ZipList
   instance CFoldable ZipList
+{-# RULES
+"cindex/ZipList"
+  cindex = (!!) . getZipList
+  #-}
+
 deriving via WrapFunctor Option
   instance CFoldable Option
 deriving via WrapFunctor Min
@@ -556,3 +596,45 @@ instance MonoFoldable mono => CFoldable (WrapMono mono) where
   {-# INLINE [1] csum #-}
   cproduct = oproduct
   {-# INLINE [1] cproduct #-}
+
+fmap concat . forM
+  (map conT [''V.Vector, ''U.Vector, ''S.Vector, ''P.Vector])
+  $ \v ->
+  [d|
+    instance CFoldable $v where
+      {-# INLINE [1] cfoldr #-}
+      cfoldr = G.foldr
+      {-# INLINE [1] cfoldr' #-}
+      cfoldr' = G.foldr'
+      {-# INLINE [1] cfoldl #-}
+      cfoldl = G.foldl
+      {-# INLINE [1] cfoldl' #-}
+      cfoldl' = G.foldl'
+      {-# INLINE [1] cindex #-}
+      cindex = (G.!)
+      {-# INLINE [1] celem #-}
+      celem = G.elem
+      {-# INLINE [1] cany #-}
+      cany = G.any
+      {-# INLINE [1] call #-}
+      call = G.all
+      {-# INLINE [1] cfoldl1 #-}
+      cfoldl1 = G.foldl1
+      {-# INLINE [1] cfoldr1 #-}
+      cfoldr1 = G.foldr1
+      {-# INLINE [1] csum #-}
+      csum = G.sum
+      {-# INLINE [1] cproduct #-}
+      cproduct = G.product
+      {-# INLINE [1] cmaximum #-}
+      cmaximum = G.maximum
+      {-# INLINE [1] cminimum #-}
+      cminimum = G.minimum
+      {-# INLINE [1] ctoList #-}
+      ctoList = G.toList
+    |]
+
+{-# RULES
+"cindex/IsSequence" forall (xs :: (MT.Index mono ~ Int, IsSequence mono) => WrapMono mono b).
+  cindex xs = indexEx (coerceToMono xs)
+  #-}

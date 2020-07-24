@@ -31,6 +31,9 @@ dependencies:
 - reflection
 - pointed
 - semialign
+- vector
+- primitive
+- template-haskell
 - unordered-containers
 
 library:

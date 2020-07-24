@@ -1,7 +1,8 @@
-{-# LANGUAGE CPP, GADTs, InstanceSigs, KindSignatures, PatternSynonyms #-}
-{-# LANGUAGE RankNTypes, RoleAnnotations, ScopedTypeVariables          #-}
-{-# LANGUAGE StandaloneDeriving, TemplateHaskell, TypeApplications     #-}
-{-# LANGUAGE TypeFamilies, TypeOperators, UndecidableSuperClasses      #-}
+{-# LANGUAGE CPP, DerivingVia, GADTs, InstanceSigs, KindSignatures    #-}
+{-# LANGUAGE PatternSynonyms, RankNTypes, RoleAnnotations             #-}
+{-# LANGUAGE ScopedTypeVariables, StandaloneDeriving, TemplateHaskell #-}
+{-# LANGUAGE TypeApplications, TypeFamilies, TypeOperators            #-}
+{-# LANGUAGE UndecidableSuperClasses                                  #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Control.Subcategory.Functor
   ( Constrained(..), Cat(), CFunctor (..),
@@ -45,6 +46,10 @@ import qualified Data.Semigroup                  as Sem
 import qualified Data.Sequence                   as Seq
 import qualified Data.Set                        as Set
 import qualified Data.Tree                       as Tree
+import qualified Data.Vector                     as V
+import qualified Data.Vector.Primitive           as P
+import qualified Data.Vector.Storable            as S
+import qualified Data.Vector.Unboxed             as U
 import           Foreign.Ptr                     (Ptr)
 import           GHC.Conc                        (STM)
 import           GHC.Generics                    ((:*:), (:+:), (:.:), K1, M1,
@@ -316,3 +321,24 @@ infixl 4 <$:>
 (<$:>) :: (CFunctor f, Cat f a, Cat f b) => (a -> b) -> f a -> f b
 (<$:>) = emap
 {-# INLINE (<$:>) #-}
+
+instance Constrained V.Vector
+instance CFunctor V.Vector where
+  emap = V.map
+
+instance Constrained U.Vector where
+  type Cat' U.Vector a = U.Unbox a
+instance CFunctor U.Vector where
+  emap = U.map
+  {-# INLINE [1] emap #-}
+instance Constrained S.Vector where
+  type Cat' S.Vector a = S.Storable a
+instance CFunctor S.Vector where
+  emap = S.map
+  {-# INLINE [1] emap #-}
+
+instance Constrained P.Vector where
+  type Cat' P.Vector a = P.Prim a
+instance CFunctor P.Vector where
+  emap = P.map
+  {-# INLINE [1] emap #-}
