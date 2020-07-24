@@ -1,0 +1,5 @@
+{
+  "editor.defaultFormatter": "vigoo.stylish-haskell",
+  "haskell.formattingProvider": "none",
+  "haskell.formatOnImportOn": false
+}
