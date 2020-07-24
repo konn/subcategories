@@ -53,6 +53,6 @@ jobs:
         stack update
         stack build --only-dependencies --test --bench --no-run-tests --no-run-benchmarks
     - name: Build
-      run: stack build --only-dependencies --test --bench --no-run-tests --no-run-benchmarks
+      run: stack build --test --bench --no-run-tests --no-run-benchmarks
     - name: Run tests
       run: stack test
