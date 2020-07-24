@@ -11,13 +11,13 @@ import Data.Kind            (Type)
 import Data.MonoTraversable
 import Data.Pointed
 import Data.Semialign       (Align, Unalign)
-import Data.Zip             (Repeat, Semialign, Unzip, Zip)
+import Data.Zip             (Semialign, Unzip, Zip)
 import GHC.Base             (MonadPlus)
 
 newtype WrapFunctor f (a :: Type) = WrapFunctor {runFunctor :: f a}
   deriving newtype (Functor, Applicative, Alternative, Monad, Foldable)
   deriving newtype (MonadPlus, MonadFix, MonadFail)
-  deriving newtype (Pointed, MonadZip, Unalign, Align, Semialign, Zip, Repeat, Unzip)
+  deriving newtype (Pointed, MonadZip, Unalign, Align, Semialign, Zip,  Unzip)
 
 instance Traversable f => Traversable (WrapFunctor f) where
   traverse f = fmap WrapFunctor . traverse f . runFunctor
