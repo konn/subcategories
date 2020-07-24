@@ -4,6 +4,9 @@
 {-# LANGUAGE TypeFamilies, TypeOperators, UndecidableSuperClasses      #-}
 module Control.Subcategory.Wrapper.Internal where
 import Control.Applicative
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 808
+import Control.Monad.Fail
+#endif
 import Control.Monad.Fix    (MonadFix)
 import Control.Monad.Zip    (MonadZip)
 import Data.Coerce
