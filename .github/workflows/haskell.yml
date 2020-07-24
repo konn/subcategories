@@ -11,7 +11,7 @@ jobs:
   build:
     strategy:
       matrix:
-        ghc: [804, 806, 808, 810]
+        ghc: [806, 808, 810]
 
     runs-on: ubuntu-latest
     env:

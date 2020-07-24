@@ -6,6 +6,9 @@ author:              "Hiromi ISHII"
 maintainer:          "konn.jinro _at_ gmail.com"
 copyright:           "2018 (c) Hiromi ISHII"
 
+tested-with:
+  GHC == 8.6.5, GHC == 8.8.3, GHC == 8.10.1
+
 extra-source-files:
 - README.md
 - ChangeLog.md
@@ -26,6 +29,7 @@ dependencies:
 - hashable
 - mono-traversable
 - pointed
+- semialign
 - unordered-containers
 
 library:
