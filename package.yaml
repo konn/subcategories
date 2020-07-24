@@ -63,24 +63,16 @@ default-extensions:
 - TypeInType
 - UndecidableInstances
 
-# executables:
-#   subcategories-exe:
-#     main:                Main.hs
-#     source-dirs:         app
-#     ghc-options:
-#     - -threaded
-#     - -rtsopts
-#     - -with-rtsopts=-N
-#     dependencies:
-#     - subcategories
-
-# tests:
-#   subcategories-test:
-#     main:                Spec.hs
-#     source-dirs:         test
-#     ghc-options:
-#     - -threaded
-#     - -rtsopts
-#     - -with-rtsopts=-N
-#     dependencies:
-#     - subcategories
+tests:
+  subcategories-test:
+    main:                opt-test.hs
+    source-dirs:         test
+    other-modules:
+    - Shared
+    ghc-options:
+    - -O2
+    - -fno-hpc
+    dependencies:
+    - subcategories
+    - inspection-testing
+    - hspec
