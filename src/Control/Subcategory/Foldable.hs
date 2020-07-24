@@ -3,7 +3,9 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Control.Subcategory.Foldable where
 import           Control.Applicative                  (ZipList)
+import           Control.Subcategory.Applicative
 import           Control.Subcategory.Functor
+import           Control.Subcategory.Pointed
 import           Control.Subcategory.Wrapper.Internal
 import           Data.Coerce
 import           Data.Complex                         (Complex)
@@ -138,6 +140,16 @@ class Constrained f => CFoldable f where
   {-# INLINE [1] cproduct #-}
   cproduct = getProduct #. cfoldMap Product
 
+  ctraverse_
+    :: (CApplicative g, CPointed g, Cat g (), Cat f a, Cat g b)
+    => (a -> g b)
+    -> f a -> g ()
+  {-# INLINE [1] ctraverse_ #-}
+  ctraverse_ f = cfoldr c (cpure ())
+    where
+      {-# INLINE c #-}
+      c x k = f x .> k
+
 instance Foldable f => CFoldable (WrapFunctor f) where
   cfoldMap = foldMap
   {-# INLINE [1] cfoldMap #-}
@@ -177,6 +189,12 @@ instance Foldable f => CFoldable (WrapFunctor f) where
   {-# INLINE [1] csum #-}
   cproduct = product
   {-# INLINE [1] cproduct #-}
+
+{-# RULES
+"ctraverse_/traverse_"
+  forall (f :: Applicative f => a -> f b) (tx :: Foldable t => t a).
+  ctraverse_ f tx = traverse_ f tx
+  #-}
 
 deriving via WrapFunctor []
   instance CFoldable []
