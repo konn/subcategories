@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures, DerivingVia, LambdaCase, StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell, TypeOperators                                 #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
@@ -153,8 +154,10 @@ class Constrained f => CFoldable f where
 instance Foldable f => CFoldable (WrapFunctor f) where
   cfoldMap = foldMap
   {-# INLINE [1] cfoldMap #-}
+#if MIN_VERSION_base(4,13,0)
   cfoldMap' = foldMap'
   {-# INLINE [1] cfoldMap' #-}
+#endif
   cfold = fold
   {-# INLINE [1] cfold #-}
   cfoldr = foldr
