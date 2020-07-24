@@ -10,6 +10,7 @@ import Control.Subcategory.Functor
 import           Data.IntSet         (IntSet)
 import qualified Data.IntSet         as IS
 import qualified Data.Sequence       as Seq
+import qualified Data.Vector         as V
 import qualified Data.Vector.Unboxed as U
 import           Shared
 import           Test.Hspec
@@ -39,6 +40,12 @@ emap_uvec = emap
 map_uvec :: (Int -> Bool) -> U.Vector Int -> U.Vector Bool
 map_uvec = U.map
 
+emap_bvec :: (a -> b) -> V.Vector a -> V.Vector b
+emap_bvec = emap
+
+map_bvec :: (a -> b) -> V.Vector a -> V.Vector b
+map_bvec = V.map
+
 cfoldr_uvec :: (Bool -> Integer -> Integer) -> Integer -> U.Vector Bool -> Integer
 cfoldr_uvec = cfoldr
 
@@ -59,6 +66,10 @@ main = hspec $ do
     describe "IntSet" $
       $(inspecting "has the same representation as IntSet.map"
         $ 'emap_intset ==- 'map_intset
+      )
+    describe "BVector" $
+      $(inspecting "has the same representation as V.map"
+        $ 'emap_bvec ==- 'map_bvec
       )
     describe "UVector" $
       $(inspecting "has the same representation as U.map"

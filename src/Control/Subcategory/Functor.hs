@@ -325,6 +325,7 @@ infixl 4 <$:>
 instance Constrained V.Vector
 instance CFunctor V.Vector where
   emap = V.map
+  {-# INLINE [1] emap #-}
 
 instance Constrained U.Vector where
   type Cat' U.Vector a = U.Unbox a
