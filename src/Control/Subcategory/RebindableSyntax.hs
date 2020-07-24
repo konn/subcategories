@@ -12,7 +12,6 @@ import Control.Subcategory.Pointed
 import Control.Arrow
 import GHC.OverloadedLabels
 import Prelude              (Bool (..), Eq (..), Num (..))
-import Prelude              (fromInteger)
 
 ifThenElse :: Bool -> a -> a -> a
 ifThenElse True t _  = t

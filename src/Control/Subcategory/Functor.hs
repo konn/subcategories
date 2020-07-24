@@ -1,35 +1,44 @@
-{-# LANGUAGE GADTs, InstanceSigs, KindSignatures, PatternSynonyms           #-}
-{-# LANGUAGE RankNTypes, RoleAnnotations, ScopedTypeVariables               #-}
-{-# LANGUAGE TemplateHaskell, TypeApplications, TypeFamilies, TypeOperators #-}
+{-# LANGUAGE CPP, GADTs, InstanceSigs, KindSignatures, PatternSynonyms #-}
+{-# LANGUAGE RankNTypes, RoleAnnotations, ScopedTypeVariables          #-}
+{-# LANGUAGE StandaloneDeriving, TemplateHaskell, TypeApplications     #-}
+{-# LANGUAGE TypeFamilies, TypeOperators, UndecidableSuperClasses      #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 module Control.Subcategory.Functor
-  ( Constrained(..), CFunctor (..),
+  ( Constrained(..), Cat(), CFunctor (..),
     (<$:>),
     defaultEmapConst,
     WrapFunctor (..),
     WrapMono (WrapMono, unwrapMono),
+    coerceToMono,
   )
 where
-import qualified Control.Applicative             as App
-import           Control.Arrow                   (Arrow, ArrowMonad)
-import           Control.Exception               (Handler)
-import qualified Control.Monad.ST.Lazy           as LST
-import qualified Control.Monad.ST.Strict         as SST
-import           Data.Complex                    (Complex)
-import qualified Data.Functor.Compose            as SOP
-import           Data.Functor.Const              (Const)
-import           Data.Functor.Identity           (Identity)
-import qualified Data.Functor.Product            as SOP
-import qualified Data.Functor.Sum                as SOP
-import           Data.Hashable                   (Hashable)
-import qualified Data.HashMap.Strict             as HM
-import qualified Data.HashSet                    as HS
-import qualified Data.IntMap                     as IM
-import           Data.Kind                       (Constraint, Type)
-import           Data.List.NonEmpty              (NonEmpty)
-import qualified Data.Map                        as Map
-import qualified Data.Monoid                     as Mon
-import           Data.MonoTraversable            (Element, MonoFunctor (..),
-                                                  WrappedMono)
+import qualified Control.Applicative                  as App
+import           Control.Arrow                        (Arrow, ArrowMonad)
+import           Control.Exception                    (Handler)
+import qualified Control.Monad.ST.Lazy                as LST
+import qualified Control.Monad.ST.Strict              as SST
+import           Control.Subcategory.Wrapper.Internal
+import           Data.Complex                         (Complex)
+import qualified Data.Functor.Compose                 as SOP
+import           Data.Functor.Const                   (Const)
+import           Data.Functor.Identity                (Identity)
+import qualified Data.Functor.Product                 as SOP
+import qualified Data.Functor.Sum                     as SOP
+import           Data.Hashable                        (Hashable)
+import qualified Data.HashMap.Strict                  as HM
+import qualified Data.HashSet                         as HS
+import qualified Data.IntMap                          as IM
+import           Data.Kind                            (Constraint, Type)
+import           Data.List.NonEmpty                   (NonEmpty)
+import qualified Data.Map                             as Map
+import qualified Data.Monoid                          as Mon
+import           Data.MonoTraversable                 (Element,
+                                                       MonoFunctor (..))
+#if MIN_VERSION_mono_traversable(1,0,14)
+import Data.MonoTraversable (WrappedMono)
+#endif
+
+import qualified Data.IntSet                     as IS
 import           Data.Ord                        (Down (..))
 import           Data.Proxy                      (Proxy)
 import qualified Data.Semigroup                  as Sem
@@ -44,12 +53,14 @@ import qualified System.Console.GetOpt           as GetOpt
 import           Text.ParserCombinators.ReadP    (ReadP)
 import           Text.ParserCombinators.ReadPrec (ReadPrec)
 
-
 infixl 4 <$:
 
+class Cat' f a => Cat f a
+instance Cat' f a => Cat f a
+
 class Constrained (f :: Type -> Type) where
-  type Cat f (a :: k) :: Constraint
-  type Cat f a = ()
+  type Cat' f (a :: Type) :: Constraint
+  type Cat' f a = ()
 
 class Constrained f => CFunctor f where
   emap :: (Cat f a, Cat f b) => (a -> b) -> f a -> f b
@@ -57,19 +68,15 @@ class Constrained f => CFunctor f where
   emap = fmap
   {-# INLINE emap #-}
   (<$:) :: (Cat f a, Cat f b) => a -> f b -> f a
-  default (<$:) :: Functor f => a -> f b -> f a
-  (<$:) = (<$)
+  (<$:) = emap . const
   {-# INLINE (<$:) #-}
 
 defaultEmapConst :: (CFunctor f, Cat f a, Cat f b) => a -> f b -> f a
 defaultEmapConst = emap . const
 {-# INLINE defaultEmapConst #-}
 
-newtype WrapFunctor f a = WrapFunctor {runFunctor :: f a}
-  deriving newtype (Functor, Applicative, App.Alternative, Monad)
-
 instance Constrained (WrapFunctor f) where
-  type Cat (WrapFunctor f) a = ()
+  type Cat' (WrapFunctor f) a = ()
 
 instance Functor f => CFunctor (WrapFunctor f) where
   emap :: (a -> b) -> WrapFunctor f a -> WrapFunctor f b
@@ -183,16 +190,14 @@ instance CFunctor (URec Word)
 instance Constrained (URec (Ptr ()))
 instance CFunctor (URec (Ptr ()))
 
+instance Constrained f => Constrained (Mon.Ap f) where
+  type Cat' (Mon.Ap f) a = Cat f a
+
+deriving newtype instance CFunctor f => CFunctor (Mon.Ap f)
+
 instance Constrained (Mon.Alt f) where
-  type Cat (Mon.Alt f) a = Cat f a
-
-instance CFunctor f => CFunctor (Mon.Alt f) where
-
-  emap f = Mon.Alt . emap f . Mon.getAlt
-  {-# INLINE emap #-}
-
-  (<$:) = defaultEmapConst
-  {-# INLINE (<$:) #-}
+  type Cat' (Mon.Alt f) a = Cat f a
+deriving newtype instance CFunctor f => CFunctor (Mon.Alt f)
 
 instance Constrained (Const m)
 instance CFunctor (Const m)
@@ -204,15 +209,18 @@ instance CFunctor ((->) r)
 instance Constrained (K1 i c)
 instance CFunctor (K1 i c)
 
-instance Constrained (f :+: g)
+instance Constrained (f :+: g) where
+  type Cat' (f :+: g) a = (Cat f a, Cat g a)
 instance (Functor f, Functor g) => CFunctor (f :+: g)
-instance Constrained (f :*: g)
+instance Constrained (f :*: g) where
+  type Cat' (f :*: g) a = (Cat f a, Cat g a)
 instance (Functor f, Functor g) => CFunctor (f :*: g)
 
-instance Constrained (f :.: g)
+instance Constrained (f :.: (g :: Type -> Type)) where
+  type Cat' (f :.: g) a = (Cat f (g a), Cat g a)
 instance (Functor f, Functor g) => CFunctor (f :.: g)
 instance (Constrained f, Constrained g) => Constrained (SOP.Sum f g) where
-  type Cat (SOP.Sum f g) a = (Cat f a, Cat g a)
+  type Cat' (SOP.Sum f g) a = (Cat f a, Cat g a)
 
 instance (CFunctor f, CFunctor g) => CFunctor (SOP.Sum f g) where
   emap f (SOP.InL a) = SOP.InL $ emap f a
@@ -224,7 +232,7 @@ instance (CFunctor f, CFunctor g) => CFunctor (SOP.Sum f g) where
   {-# INLINE (<$:) #-}
 
 instance (Constrained f, Constrained g) => Constrained (SOP.Product f g) where
-  type Cat (SOP.Product f g) a = (Cat f a, Cat g a)
+  type Cat' (SOP.Product f g) a = (Cat f a, Cat g a)
 
 instance (CFunctor f, CFunctor g) => CFunctor (SOP.Product f g) where
   emap f (SOP.Pair a b) = SOP.Pair (emap f a) (emap f b)
@@ -235,7 +243,7 @@ instance (CFunctor f, CFunctor g) => CFunctor (SOP.Product f g) where
 
 instance (Constrained (f ::Type -> Type), Constrained (g :: Type -> Type))
   => Constrained (SOP.Compose f g) where
-  type Cat (SOP.Compose f g) a = (Cat g a, Cat f (g a))
+  type Cat' (SOP.Compose f g) a = (Cat g a, Cat f (g a))
 
 instance (CFunctor f, CFunctor g) => CFunctor (SOP.Compose f g) where
   emap f (SOP.Compose a) = SOP.Compose $ emap (emap f) a
@@ -249,25 +257,20 @@ instance Functor f => CFunctor (M1 i c f)
 instance Constrained Seq.Seq
 instance CFunctor Seq.Seq
 
-type role WrapMono representational nominal
--- | Similar to 'WrappedMono' from @mono-traversable,
---   but uses @newtype@ instaed of GADTs, which is efficient.
---   To restrict the construction, we hide genuine constructor
---   and expose the constrained pattern synonym 'WrapMono' and
---   specifies type roles tightly (note: the role for @mono@
---   should NOT be representational honestly; indeed, @WrapMono mono a@
---   could be coerced to @WrapMono mono' a@ iff @mono@ and @mono' are
---   representationally equivalent __AND__ @Element a ~ Element a@.)
-newtype WrapMono mono b = WrapMono' mono
-
-pattern WrapMono :: b ~ Element mono => b ~ Element mono => mono -> WrapMono mono b
-pattern WrapMono {unwrapMono} = WrapMono' unwrapMono
-
+#if MIN_VERSION_mono_traversable(1,0,14)
 instance Constrained (WrappedMono mono) where
-  type Cat (WrappedMono mono) a = a ~ Element mono
+  type Cat' (WrappedMono mono) a = a ~ Element mono
+
+instance MonoFunctor IS.IntSet where
+  omap = IS.map
+
+instance MonoFunctor mono => CFunctor (WrappedMono mono) where
+  emap = omap
+  (<$:) = omap . const
+#endif
 
 instance Constrained (WrapMono mono) where
-  type Cat (WrapMono mono) b = b ~ Element mono
+  type Cat' (WrapMono mono) b = b ~ Element mono
 
 instance {-# OVERLAPPABLE #-} MonoFunctor a
       => CFunctor (WrapMono a) where
@@ -286,7 +289,7 @@ instance Constrained (Map.Map k)
 instance Ord k => CFunctor (Map.Map k)
 
 instance Constrained Set.Set where
-  type Cat Set.Set a = Ord a
+  type Cat' Set.Set a = Ord a
 
 instance CFunctor Set.Set where
   emap = Set.map
@@ -295,7 +298,7 @@ instance CFunctor Set.Set where
   {-# INLINE (<$:) #-}
 
 instance Constrained HS.HashSet where
-  type Cat HS.HashSet a = (Hashable a, Eq a)
+  type Cat' HS.HashSet a = (Hashable a, Eq a)
 
 instance CFunctor HS.HashSet where
   emap = HS.map

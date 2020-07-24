@@ -1,4 +1,5 @@
-{-# LANGUAGE EmptyCase, TupleSections, UndecidableSuperClasses #-}
+{-# LANGUAGE EmptyCase, StandaloneDeriving, TupleSections #-}
+{-# LANGUAGE UndecidableSuperClasses                      #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Control.Subcategory.Applicative
   ( CApplicative(..), defaultRightApply, defaultLeftApply, CApp(..)
@@ -21,8 +22,6 @@ import qualified Data.HashSet                    as HS
 import qualified Data.IntMap                     as IM
 import           Data.List.NonEmpty              (NonEmpty)
 import qualified Data.Map                        as Map
-import           Data.Monoid                     (Monoid (..))
-import           Data.Semigroup                  (Semigroup ((<>)))
 import qualified Data.Semigroup                  as Sem
 import qualified Data.Sequence                   as Seq
 import qualified Data.Set                        as Set
@@ -139,11 +138,18 @@ instance CApplicative HS.HashSet where
          | otherwise  = b
   {-# INLINE (.>) #-}
 
+instance Constrained f => Constrained (CApp f) where
+  type Cat' (CApp f) a = Cat f a
+
 newtype CApp f a = CApp { runCApp :: f a }
   deriving (Read, Show, Eq, Ord)
-  deriving newtype (Functor, Applicative, App.Alternative,
-                    CFunctor, CChoice, CAlternative,
-                    CApplicative, CPointed)
+  deriving newtype (Functor, Applicative, App.Alternative)
+
+deriving newtype instance (CFunctor f) => CFunctor (CApp f)
+deriving newtype instance (CChoice f) => CChoice (CApp f)
+deriving newtype instance (CAlternative f) => CAlternative (CApp f)
+deriving newtype instance (CApplicative f) => CApplicative (CApp f)
+deriving newtype instance (CPointed f) => CPointed (CApp f)
 
 instance (Cat f a, CApplicative f, Semigroup a, Cat f (a, a))
        => Semigroup (CApp f a) where

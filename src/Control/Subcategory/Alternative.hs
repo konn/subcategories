@@ -1,4 +1,4 @@
-{-# LANGUAGE EmptyCase, ScopedTypeVariables #-}
+{-# LANGUAGE EmptyCase, ScopedTypeVariables, StandaloneDeriving #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Control.Subcategory.Alternative
   (CAlternative(..), CChoice(..), CAlt(..)) where
@@ -15,11 +15,9 @@ import           Data.Hashable                   (Hashable)
 import qualified Data.HashMap.Strict             as HM
 import qualified Data.HashSet                    as HS
 import qualified Data.IntMap                     as IM
-import           Data.IntSet                     (IntSet)
-import qualified Data.IntSet                     as IS
 import           Data.List.NonEmpty              (NonEmpty)
 import qualified Data.Map                        as Map
-import           Data.Semigroup                  (Semigroup ((<>)))
+import           Data.MonoTraversable            (GrowingAppend, MonoFunctor)
 import qualified Data.Semigroup                  as Sem
 import qualified Data.Sequence                   as Seq
 import qualified Data.Set                        as Set
@@ -62,9 +60,11 @@ instance Ord k => CChoice (Map.Map k) where
   (<!>) = Map.union
   {-# INLINE (<!>) #-}
 
-instance CChoice (WrapIntContainer IntSet) where
-  WrapIntContainer l <!> WrapIntContainer r =
-    WrapIntContainer $ IS.union l r
+instance
+    (MonoFunctor mono, GrowingAppend mono, Semigroup mono)
+  => CChoice (WrapMono mono) where
+  (<!>) = (<>)
+  {-# INLINE [1] (<!>) #-}
 
 instance (Eq k, Hashable k) => CChoice (HM.HashMap k) where
   (<!>) = HM.union
@@ -85,9 +85,10 @@ instance CAlternative HS.HashSet where
 instance CAlternative Set.Set where
   cempty = Set.empty
   {-# INLINE cempty #-}
-instance CAlternative (WrapIntContainer IS.IntSet) where
-  cempty = WrapIntContainer IS.empty
-  {-# INLINE cempty #-}
+instance (MonoFunctor mono, Monoid mono, GrowingAppend mono)
+      => CAlternative (WrapMono mono) where
+  cempty = WrapMono mempty
+  {-# INLINE [1] cempty #-}
 
 instance (CAlternative f, CFunctor g) => CAlternative (SOP.Compose f g) where
   cempty = SOP.Compose cempty
@@ -105,9 +106,13 @@ instance CAlternative ReadP
 instance CAlternative ReadPrec
 
 newtype CAlt f a = CAlt { runAlt :: f a }
-  deriving newtype (Functor, Applicative, App.Alternative,
-                    CFunctor, CChoice, CAlternative,
-                    CApplicative, CPointed)
+  deriving newtype (Functor, Constrained, Applicative, App.Alternative)
+deriving newtype instance CFunctor f => CFunctor (CAlt f)
+deriving newtype instance CChoice f => CChoice (CAlt f)
+deriving newtype instance CAlternative f => CAlternative (CAlt f)
+deriving newtype instance CApplicative f => CApplicative (CAlt f)
+deriving newtype instance CPointed f => CPointed (CAlt f)
+
 
 instance (Cat f a, CChoice f) => Sem.Semigroup (CAlt f a) where
   (<>) = coerce @(f a -> f a -> f a) (<!>)

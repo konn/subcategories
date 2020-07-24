@@ -1,8 +1,537 @@
+{-# LANGUAGE DefaultSignatures, DerivingVia, LambdaCase, StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell, TypeOperators                                 #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 module Control.Subcategory.Foldable where
-import Control.Subcategory.Functor
+import           Control.Applicative                  (ZipList)
+import           Control.Subcategory.Functor
+import           Control.Subcategory.Wrapper.Internal
+import           Data.Coerce
+import           Data.Complex                         (Complex)
+import           Data.Foldable
+import           Data.Functor.Const                   (Const)
+import           Data.Functor.Identity                (Identity)
+import qualified Data.Functor.Product                 as SOP
+import qualified Data.Functor.Sum                     as SOP
+import qualified Data.HashMap.Strict                  as HM
+import qualified Data.HashSet                         as HS
+import qualified Data.IntMap.Strict                   as IM
+import qualified Data.IntSet                          as IS
+import           Data.Kind                            (Type)
+import           Data.List.NonEmpty                   (NonEmpty)
+import qualified Data.Map                             as M
+import           Data.Maybe                           (fromMaybe)
+import           Data.Monoid
+import qualified Data.Monoid                          as Mon
+import           Data.MonoTraversable                 hiding (WrappedMono,
+                                                       unwrapMono)
+import           Data.Ord                             (Down)
+import           Data.Proxy                           (Proxy)
+import           Data.Semigroup                       (Arg, Max (..), Min (..),
+                                                       Option)
+import qualified Data.Semigroup                       as Sem
+import qualified Data.Sequence                        as Seq
+import qualified Data.Set                             as Set
+import           Foreign.Ptr                          (Ptr)
+import           GHC.Generics
+
+-- See Note [Function coercion]
+(#.) :: Coercible b c => (b -> c) -> (a -> b) -> (a -> c)
+(#.) _f = coerce
+{-# INLINE (#.) #-}
 
 class Constrained f => CFoldable f where
+  {-# MINIMAL cfoldMap | cfoldr #-}
   cfoldMap :: (Cat f a, Monoid w) => (a -> w) -> f a -> w
+  {-# INLINE [1] cfoldMap #-}
+  cfoldMap f = cfoldr (mappend . f) mempty
+
+  cfoldMap' :: (Cat f a, Monoid m) => (a -> m) -> f a -> m
+  {-# INLINE [1] cfoldMap' #-}
+  cfoldMap' f = cfoldl' (\ acc a -> acc <> f a) mempty
+
   cfold :: (Cat f w, Monoid w) => f w -> w
+  cfold = cfoldMap id
+
+  {-# INLINE [1] cfold #-}
+  cfoldr :: (Cat f a) => (a -> b -> b) -> b -> f a -> b
+  {-# INLINE [1] cfoldr #-}
+  cfoldr f z t = appEndo (cfoldMap (Endo #. f) t) z
+
+  cfoldl
+      :: (Cat f a)
+      => (b -> a -> b) -> b -> f a -> b
+  {-# INLINE [1] cfoldl #-}
+  cfoldl f z t = appEndo (getDual (cfoldMap (Dual . Endo . flip f) t)) z
+
+  cfoldr' :: (Cat f a) => (a -> b -> b) -> b -> f a -> b
+  {-# INLINE [1] cfoldr' #-}
+  cfoldr' f z0 xs = cfoldl f' id xs z0
+      where f' k x z = k $! f x z
+
+  cfoldl' :: Cat f a => (b -> a -> b) -> b -> f a -> b
+  {-# INLINE [1] cfoldl' #-}
+  cfoldl' f z0 xs = cfoldr f' id xs z0
+    where f' x k z = k $! f z x
+
+  ctoList :: Cat f a => f a -> [a]
+  {-# INLINE [1] ctoList #-}
+  ctoList = cfoldr (:) []
+
+  cfoldr1 :: Cat f a => (a -> a -> a) -> f a -> a
+  {-# INLINE [1] cfoldr1 #-}
+  cfoldr1 f xs = fromMaybe (errorWithoutStackTrace "cfoldr1: empty structure")
+                    (cfoldr mf Nothing xs)
+      where
+        mf x m = Just $
+          case m of
+            Nothing -> x
+            Just y  -> f x y
+
+  cfoldl1 :: Cat f a => (a -> a -> a) -> f a -> a
+  {-# INLINE [1] cfoldl1 #-}
+  cfoldl1 f xs = fromMaybe (errorWithoutStackTrace "cfoldl1: empty structure")
+                  (cfoldl mf Nothing xs)
+    where
+      mf m y = Just $
+        case m of
+          Nothing -> y
+          Just x  -> f x y
+
+  cnull :: Cat f a => f a -> Bool
+  cnull = cfoldr (const $ const False) True
+
+  clength :: Cat f a => f a -> Int
+  {-# INLINE [1] clength #-}
+  clength = cfoldl' (\c _ -> c + 1) 0
+
+  cany :: Cat f a => (a -> Bool) -> f a -> Bool
+  {-# INLINE [1] cany #-}
+  cany p = cfoldl' (\b -> (||) b . p) False
+
+  call :: Cat f a => (a -> Bool) -> f a -> Bool
+  {-# INLINE [1] call #-}
+  call p = cfoldl' (\b -> (&&) b . p) True
+
+  celem :: (Eq a, Cat f a) => a -> f a -> Bool
+  {-# INLINE [1] celem #-}
+  celem = cany . (==)
+
+  cminimum :: (Ord a, Cat f a) => f a -> a
+  {-# INLINE [1] cminimum #-}
+  cminimum =
+    getMin
+    . fromMaybe (errorWithoutStackTrace "minimum: empty structure")
+    . cfoldMap (Just . Min)
+
+  cmaximum :: (Ord a, Cat f a) => f a -> a
+  {-# INLINE [1] cmaximum #-}
+  cmaximum =
+    getMax
+    . fromMaybe (errorWithoutStackTrace "cmaximum: empty structure")
+    . cfoldMap (Just . Max)
+
+  csum :: (Num a, Cat f a) => f a -> a
+  {-# INLINE [1] csum #-}
+  csum = getSum #. cfoldMap Sum
+
+  cproduct :: (Num a, Cat f a) => f a -> a
+  {-# INLINE [1] cproduct #-}
+  cproduct = getProduct #. cfoldMap Product
+
+instance Foldable f => CFoldable (WrapFunctor f) where
+  cfoldMap = foldMap
+  {-# INLINE [1] cfoldMap #-}
+  cfoldMap' = foldMap'
+  {-# INLINE [1] cfoldMap' #-}
+  cfold = fold
+  {-# INLINE [1] cfold #-}
+  cfoldr = foldr
+  {-# INLINE [1] cfoldr #-}
+  cfoldr' = foldr'
+  {-# INLINE [1] cfoldr' #-}
+  cfoldl = foldl
+  {-# INLINE [1] cfoldl #-}
+  cfoldl' = foldl'
+  {-# INLINE [1] cfoldl' #-}
+  ctoList = toList
+  {-# INLINE [1] ctoList #-}
+  cfoldr1 = foldr1
+  {-# INLINE [1] cfoldr1 #-}
+  cfoldl1 = foldl1
+  {-# INLINE [1] cfoldl1 #-}
+  cnull = null
+  {-# INLINE [1] cnull #-}
+  clength = length
+  {-# INLINE [1] clength #-}
+  cany = any
+  {-# INLINE [1] cany #-}
+  call = all
+  {-# INLINE [1] call #-}
+  celem = elem
+  {-# INLINE [1] celem #-}
+  cminimum = minimum
+  {-# INLINE [1] cminimum #-}
+  cmaximum = maximum
+  {-# INLINE [1] cmaximum #-}
+  csum = sum
+  {-# INLINE [1] csum #-}
+  cproduct = product
+  {-# INLINE [1] cproduct #-}
+
+deriving via WrapFunctor []
+  instance CFoldable []
+deriving via WrapFunctor Maybe
+  instance CFoldable Maybe
+deriving via WrapFunctor (Either e)
+  instance CFoldable (Either e)
+deriving via WrapFunctor IM.IntMap
+  instance CFoldable IM.IntMap
+deriving via WrapFunctor (M.Map k)
+  instance CFoldable (M.Map k)
+deriving via WrapFunctor (HM.HashMap k)
+  instance CFoldable (HM.HashMap k)
+deriving via WrapFunctor Seq.Seq
+  instance CFoldable Seq.Seq
+deriving via WrapFunctor Par1
+  instance CFoldable Par1
+deriving via WrapFunctor NonEmpty
+  instance CFoldable NonEmpty
+deriving via WrapFunctor Down
+  instance CFoldable Down
+deriving via WrapFunctor Mon.Last
+  instance CFoldable Mon.Last
+deriving via WrapFunctor Mon.First
+  instance CFoldable Mon.First
+deriving via WrapFunctor Sem.Last
+  instance CFoldable Sem.Last
+deriving via WrapFunctor Sem.First
+  instance CFoldable Sem.First
+deriving via WrapFunctor Identity
+  instance CFoldable Identity
+deriving via WrapFunctor ZipList
+  instance CFoldable ZipList
+deriving via WrapFunctor Option
+  instance CFoldable Option
+deriving via WrapFunctor Min
+  instance CFoldable Min
+deriving via WrapFunctor Max
+  instance CFoldable Max
+deriving via WrapFunctor Complex
+  instance CFoldable Complex
+deriving via WrapFunctor (V1 :: Type -> Type)
+  instance CFoldable (V1 :: Type -> Type)
+deriving via WrapFunctor (U1 :: Type -> Type)
+  instance CFoldable (U1 :: Type -> Type)
+deriving via WrapFunctor ((,) a)
+  instance CFoldable ((,) a)
+deriving via WrapFunctor (Proxy :: Type -> Type)
+  instance CFoldable (Proxy :: Type -> Type)
+deriving via WrapFunctor (Arg a)
+  instance CFoldable (Arg a)
+deriving via WrapFunctor (Rec1 (f :: Type -> Type))
+  instance Foldable f => CFoldable (Rec1 (f :: Type -> Type))
+deriving via WrapFunctor (URec Char :: Type -> Type)
+  instance CFoldable (URec Char :: Type -> Type)
+deriving via WrapFunctor (URec Double :: Type -> Type)
+  instance CFoldable (URec Double :: Type -> Type)
+deriving via WrapFunctor (URec Float :: Type -> Type)
+  instance CFoldable (URec Float :: Type -> Type)
+deriving via WrapFunctor (URec Int :: Type -> Type)
+  instance CFoldable (URec Int :: Type -> Type)
+deriving via WrapFunctor (URec Word :: Type -> Type)
+  instance CFoldable (URec Word :: Type -> Type)
+deriving via WrapFunctor (URec (Ptr ()) :: Type -> Type)
+  instance CFoldable (URec (Ptr ()) :: Type -> Type)
+deriving newtype
+  instance CFoldable f => CFoldable (Alt f)
+deriving newtype
+  instance CFoldable f => CFoldable (Ap f)
+deriving via WrapFunctor (Const m :: Type -> Type)
+  instance CFoldable (Const m :: Type -> Type)
+deriving via WrapFunctor (K1 i c :: Type -> Type)
+  instance CFoldable (K1 i c :: Type -> Type)
+
+instance (CFoldable f, CFoldable g) => CFoldable (f :+: g) where
+  {-# INLINE [1] cfoldMap #-}
+  cfoldMap f = \case
+    L1 x -> cfoldMap f x
+    R1 x -> cfoldMap f x
+
+  {-# INLINE [1] cfoldr #-}
+  cfoldr f z = \case
+    L1 x -> cfoldr f z x
+    R1 x -> cfoldr f z x
+
+  cfoldMap' = \f -> \case
+    L1 x -> cfoldMap' f x
+    R1 x -> cfoldMap' f x
+  {-# INLINE [1] cfoldMap' #-}
+  cfold = \case
+    L1 x -> cfold x
+    R1 x -> cfold x
+  {-# INLINE [1] cfold #-}
+  cfoldr' = \f z -> \case
+    L1 x -> cfoldr' f z x
+    R1 x -> cfoldr' f z x
+  {-# INLINE [1] cfoldr' #-}
+  cfoldl = \f z -> \case
+    L1 x -> cfoldl f z x
+    R1 x -> cfoldl f z x
+  {-# INLINE [1] cfoldl #-}
+  cfoldl' = \f z -> \case
+    L1 x -> cfoldl' f z x
+    R1 x -> cfoldl' f z x
+  {-# INLINE [1] cfoldl' #-}
+  ctoList = \case
+    L1 x -> ctoList x
+    R1 x -> ctoList x
+  {-# INLINE [1] ctoList #-}
+  cfoldr1 = \f -> \case
+    L1 x -> cfoldr1 f x
+    R1 x -> cfoldr1 f x
+  {-# INLINE [1] cfoldr1 #-}
+  cfoldl1 = \f -> \case
+    L1 x -> cfoldl1 f x
+    R1 x -> cfoldl1 f x
+  {-# INLINE [1] cfoldl1 #-}
+  cnull = \case
+    L1 x -> cnull x
+    R1 x -> cnull x
+  {-# INLINE [1] cnull #-}
+  clength = \case
+    L1 x -> clength x
+    R1 x -> clength x
+  {-# INLINE [1] clength #-}
+  cany = \f -> \case
+    L1 x -> cany f x
+    R1 x -> cany f x
+  {-# INLINE [1] cany #-}
+  call = \f -> \case
+    L1 x -> call f x
+    R1 x -> call f x
+  {-# INLINE [1] call #-}
+  celem = \x -> \case
+    L1 xs -> celem x xs
+    R1 xs -> celem x xs
+  {-# INLINE [1] celem #-}
+  cminimum = \case
+    L1 xs -> cminimum xs
+    R1 xs -> cminimum xs
+  {-# INLINE [1] cminimum #-}
+  cmaximum = \case
+    L1 xs -> cmaximum xs
+    R1 xs -> cmaximum xs
+  {-# INLINE [1] cmaximum #-}
+  csum = \case
+    L1 xs -> csum xs
+    R1 xs -> csum xs
+  {-# INLINE [1] csum #-}
+  cproduct = \case
+    L1 xs -> cproduct xs
+    R1 xs -> cproduct xs
+  {-# INLINE [1] cproduct #-}
+
+instance (CFoldable f, CFoldable g) => CFoldable (f :*: g) where
+  {-# INLINE [1] cfoldMap #-}
+  cfoldMap f (l :*: r) = cfoldMap f l <> cfoldMap f r
+
+  cfoldMap' f (l :*: r) = cfoldMap' f l <> cfoldMap' f r
+  {-# INLINE [1] cfoldMap' #-}
+  cfold (l :*: r) = cfold l <> cfold r
+  {-# INLINE [1] cfold #-}
+  cnull (l :*: r) = cnull l && cnull r
+  {-# INLINE [1] cnull #-}
+  clength (l :*: r) = clength l + clength r
+  {-# INLINE [1] clength #-}
+  cany f (l :*: r) = cany f l || cany f r
+  {-# INLINE [1] cany #-}
+  call f (l :*: r) = call f l && call f r
+  {-# INLINE [1] call #-}
+  celem x (l :*: r) = celem x l || celem x r
+  {-# INLINE [1] celem #-}
+  csum (l :*: r) = csum l + csum r
+  {-# INLINE [1] csum #-}
+  cproduct (l :*: r) = cproduct l * cproduct r
+  {-# INLINE [1] cproduct #-}
+
+instance (CFoldable f, CFoldable g) => CFoldable (SOP.Sum f g) where
+  {-# INLINE [1] cfoldMap #-}
+  cfoldMap f = \case
+    SOP.InL x -> cfoldMap f x
+    SOP.InR x -> cfoldMap f x
+
+  {-# INLINE [1] cfoldr #-}
+  cfoldr f z = \case
+    SOP.InL x -> cfoldr f z x
+    SOP.InR x -> cfoldr f z x
+
+  cfoldMap' = \f -> \case
+    SOP.InL x -> cfoldMap' f x
+    SOP.InR x -> cfoldMap' f x
+  {-# INLINE [1] cfoldMap' #-}
+  cfold = \case
+    SOP.InL x -> cfold x
+    SOP.InR x -> cfold x
+  {-# INLINE [1] cfold #-}
+  cfoldr' = \f z -> \case
+    SOP.InL x -> cfoldr' f z x
+    SOP.InR x -> cfoldr' f z x
+  {-# INLINE [1] cfoldr' #-}
+  cfoldl = \f z -> \case
+    SOP.InL x -> cfoldl f z x
+    SOP.InR x -> cfoldl f z x
+  {-# INLINE [1] cfoldl #-}
+  cfoldl' = \f z -> \case
+    SOP.InL x -> cfoldl' f z x
+    SOP.InR x -> cfoldl' f z x
+  {-# INLINE [1] cfoldl' #-}
+  ctoList = \case
+    SOP.InL x -> ctoList x
+    SOP.InR x -> ctoList x
+  {-# INLINE [1] ctoList #-}
+  cfoldr1 = \f -> \case
+    SOP.InL x -> cfoldr1 f x
+    SOP.InR x -> cfoldr1 f x
+  {-# INLINE [1] cfoldr1 #-}
+  cfoldl1 = \f -> \case
+    SOP.InL x -> cfoldl1 f x
+    SOP.InR x -> cfoldl1 f x
+  {-# INLINE [1] cfoldl1 #-}
+  cnull = \case
+    SOP.InL x -> cnull x
+    SOP.InR x -> cnull x
+  {-# INLINE [1] cnull #-}
+  clength = \case
+    SOP.InL x -> clength x
+    SOP.InR x -> clength x
+  {-# INLINE [1] clength #-}
+  cany = \f -> \case
+    SOP.InL x -> cany f x
+    SOP.InR x -> cany f x
+  {-# INLINE [1] cany #-}
+  call = \f -> \case
+    SOP.InL x -> call f x
+    SOP.InR x -> call f x
+  {-# INLINE [1] call #-}
+  celem = \x -> \case
+    SOP.InL xs -> celem x xs
+    SOP.InR xs -> celem x xs
+  {-# INLINE [1] celem #-}
+  cminimum = \case
+    SOP.InL xs -> cminimum xs
+    SOP.InR xs -> cminimum xs
+  {-# INLINE [1] cminimum #-}
+  cmaximum = \case
+    SOP.InL xs -> cmaximum xs
+    SOP.InR xs -> cmaximum xs
+  {-# INLINE [1] cmaximum #-}
+  csum = \case
+    SOP.InL xs -> csum xs
+    SOP.InR xs -> csum xs
+  {-# INLINE [1] csum #-}
+  cproduct = \case
+    SOP.InL xs -> cproduct xs
+    SOP.InR xs -> cproduct xs
+  {-# INLINE [1] cproduct #-}
 
 
+instance (CFoldable f, CFoldable g) => CFoldable (SOP.Product f g) where
+  {-# INLINE [1] cfoldMap #-}
+  cfoldMap f (SOP.Pair l r) = cfoldMap f l <> cfoldMap f r
+
+  cfoldMap' f (SOP.Pair l r) = cfoldMap' f l <> cfoldMap' f r
+  {-# INLINE [1] cfoldMap' #-}
+  cfold (SOP.Pair l r) = cfold l <> cfold r
+  {-# INLINE [1] cfold #-}
+  cnull (SOP.Pair l r) = cnull l && cnull r
+  {-# INLINE [1] cnull #-}
+  clength (SOP.Pair l r) = clength l + clength r
+  {-# INLINE [1] clength #-}
+  cany f (SOP.Pair l r) = cany f l || cany f r
+  {-# INLINE [1] cany #-}
+  call f (SOP.Pair l r) = call f l && call f r
+  {-# INLINE [1] call #-}
+  celem x (SOP.Pair l r) = celem x l || celem x r
+  {-# INLINE [1] celem #-}
+  csum (SOP.Pair l r) = csum l + csum r
+  {-# INLINE [1] csum #-}
+  cproduct (SOP.Pair l r) = cproduct l * cproduct r
+  {-# INLINE [1] cproduct #-}
+
+instance CFoldable Set.Set where
+  cfoldMap = ofoldMap
+  {-# INLINE [1] cfoldMap #-}
+  cfoldr = Set.foldr
+  {-# INLINE [1] cfoldr #-}
+  cfoldl = Set.foldl
+  {-# INLINE [1] cfoldl #-}
+  cfoldr' = Set.foldr'
+  {-# INLINE [1] cfoldr' #-}
+  cfoldl' = Set.foldl'
+  {-# INLINE [1] cfoldl' #-}
+  cminimum = Set.findMin
+  {-# INLINE [1] cminimum #-}
+  cmaximum = Set.findMax
+  {-# INLINE [1] cmaximum #-}
+  celem = Set.member
+  {-# INLINE [1] celem #-}
+  ctoList = Set.toList
+  {-# INLINE [1] ctoList #-}
+
+instance CFoldable HS.HashSet where
+  cfoldMap = ofoldMap
+  {-# INLINE [1] cfoldMap #-}
+  cfoldr = HS.foldr
+  {-# INLINE [1] cfoldr #-}
+  cfoldl' = HS.foldl'
+  {-# INLINE [1] cfoldl' #-}
+  celem = HS.member
+  {-# INLINE [1] celem #-}
+  ctoList = HS.toList
+  {-# INLINE [1] ctoList #-}
+
+{-# RULES
+"celem/IntSet"
+  celem = coerce
+    @(Int -> IS.IntSet -> Bool)
+    @(Int -> WrapMono IS.IntSet Int -> Bool)
+    IS.member
+"cmaximum/IntSet"
+  cmaximum = coerce @_ @(WrapMono IS.IntSet Int -> Int)
+    IS.findMax
+"cminimum/IntSet"
+  cminimum = coerce @(IS.IntSet -> Int) @(WrapMono IS.IntSet Int -> Int)
+    IS.findMin
+  #-}
+
+instance MonoFoldable mono => CFoldable (WrapMono mono) where
+  cfoldMap = ofoldMap
+  {-# INLINE [1] cfoldMap #-}
+  cfold = ofold
+  {-# INLINE [1] cfold #-}
+  cfoldr = ofoldr
+  {-# INLINE [1] cfoldr #-}
+  cfoldl' = ofoldl'
+  {-# INLINE [1] cfoldl' #-}
+  ctoList = otoList
+  {-# INLINE [1] ctoList #-}
+  cfoldr1 = ofoldr1Ex
+  {-# INLINE [1] cfoldr1 #-}
+  cnull = onull
+  {-# INLINE [1] cnull #-}
+  clength = olength
+  {-# INLINE [1] clength #-}
+  cany = oany
+  {-# INLINE [1] cany #-}
+  call = oall
+  {-# INLINE [1] call #-}
+  celem = oelem
+  {-# INLINE [1] celem #-}
+  cminimum = minimumEx
+  {-# INLINE [1] cminimum #-}
+  cmaximum = maximumEx
+  {-# INLINE [1] cmaximum #-}
+  csum = osum
+  {-# INLINE [1] csum #-}
+  cproduct = oproduct
+  {-# INLINE [1] cproduct #-}
