@@ -6,6 +6,7 @@
 module Main where
 import Control.Subcategory.Foldable
 import Control.Subcategory.Functor
+import Control.Subcategory.Zip
 
 import           Data.IntSet         (IntSet)
 import qualified Data.IntSet         as IS
@@ -52,6 +53,18 @@ cfoldr_uvec = cfoldr
 foldr_uvec :: (Bool -> Integer -> Integer) -> Integer -> U.Vector Bool -> Integer
 foldr_uvec = U.foldr
 
+czipWith_vec :: (a -> b -> c) -> V.Vector a -> V.Vector b -> V.Vector c
+czipWith_vec = czipWith
+
+zipWith_vec :: (a -> b -> c) -> V.Vector a -> V.Vector b -> V.Vector c
+zipWith_vec = V.zipWith
+
+czipWith_list :: (a -> b -> c) -> [a] -> [b] -> [c]
+czipWith_list = czipWith
+
+zipWith_list :: (a -> b -> c) -> [a] -> [b] -> [c]
+zipWith_list = Prelude.zipWith
+
 main :: IO ()
 main = hspec $ do
   describe "cmap" $ do
@@ -75,8 +88,17 @@ main = hspec $ do
       $(inspecting "has the same representation as U.map"
         $ 'cmap_uvec ==- 'map_uvec
       )
-  describe "cfoldrmap" $ do
+  describe "cfoldr" $ do
     describe "UVector" $
       $(inspecting "has the same representation as U.foldr"
         $ 'cfoldr_uvec ==- 'foldr_uvec
       )
+  describe "zipWith" $ do
+    describe "list" $
+      $(inspecting "has the same representation as Prelude.zipWith"
+        $ 'czipWith_list ==- 'zipWith_list
+        )
+    describe "vector" $
+      $(inspecting "has the same representation as Prelude.zipWith"
+        $ 'czipWith_vec ==- 'zipWith_vec
+        )
