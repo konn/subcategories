@@ -1,8 +1,14 @@
 {-# LANGUAGE DerivingVia, StandaloneDeriving, TypeOperators #-}
-module Control.Subcategory.Zip where
+module Control.Subcategory.Zip
+  ( CZip(..),
+    CZippy(..),
+    CRepeat(..),
+    module Control.Subcategory.Semialign
+  )where
 import           Control.Applicative           (ZipList (ZipList))
 import           Control.Subcategory.Functor
 import           Control.Subcategory.Semialign
+import           Data.Coerce                   (coerce)
 import           Data.Data                     (Proxy (Proxy))
 import           Data.Functor.Compose          (Compose (..))
 import           Data.Functor.Identity         (Identity)
@@ -123,3 +129,36 @@ instance (CZip f, CZip g) => CZip (f :.: g) where
 "czipWith/Seq"
   czipWith = Seq.zipWith
   #-}
+
+class CZip f => CRepeat f where
+  crepeat :: Cat f a => a -> f a
+
+newtype CZippy f a = CZippy { runCZippy :: f a }
+  deriving (Show, Read)
+  deriving newtype (Functor, Zip, Semialign, Repeat, Eq, Ord)
+  deriving newtype (Constrained)
+
+instance CFunctor f => CFunctor (CZippy f) where
+  cmap = coerce $ cmap @f @a @b
+    :: forall a b. (Cat f a, Cat f b) => (a -> b) -> CZippy f a -> CZippy f b
+  {-# INLINE [1] cmap #-}
+
+instance CSemialign f => CSemialign (CZippy f) where
+  calignWith = \f -> coerce $ calignWith @f f
+  {-# INLINE [1] calignWith #-}
+
+instance CZip f => CZip (CZippy f) where
+  czipWith f = coerce $ czipWith @f f
+  {-# INLINE [1] czipWith #-}
+
+instance CRepeat f => CRepeat (CZippy f) where
+  crepeat = CZippy . crepeat
+  {-# INLINE [1] crepeat #-}
+
+instance (CZip f, Cat f a, Semigroup a) => Semigroup (CZippy f a) where
+  (<>) = coerce $ czipWith @f ((<>) @a)
+  {-# INLINE [1] (<>) #-}
+
+instance (CRepeat f, Cat f a, Monoid a) => Monoid (CZippy f a) where
+  mempty = coerce $ crepeat @f (mempty @a)
+  {-# INLINE [1] mempty #-}

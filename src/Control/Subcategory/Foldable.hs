@@ -4,7 +4,9 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Control.Subcategory.Foldable
   ( CFoldable(..), CTraversable(..),
-    CFreeMonoid(), cctraverseFreeMonoid
+    CFreeMonoid(),
+    cctraverseFreeMonoid,
+    cctraverseZipFreeMonoid
   ) where
 import           Control.Applicative                  (ZipList, getZipList)
 import           Control.Monad
@@ -12,6 +14,7 @@ import           Control.Subcategory.Applicative
 import           Control.Subcategory.Functor
 import           Control.Subcategory.Pointed
 import           Control.Subcategory.Wrapper.Internal
+import           Control.Subcategory.Zip
 import           Data.Coerce
 import           Data.Complex                         (Complex)
 import           Data.Foldable
@@ -860,3 +863,11 @@ cctraverseFreeMonoid
 cctraverseFreeMonoid f =
   runCApp . cfoldMap (CApp . cmap cpure . f)
 
+cctraverseZipFreeMonoid
+  :: ( CFreeMonoid t, CRepeat f,
+        Cat t a, Cat f (t b), Cat f b, Cat t b,
+        Cat f (t b, t b)
+      )
+  => (a -> f b) -> t a -> f (t b)
+cctraverseZipFreeMonoid f =
+  runCZippy . cfoldMap (CZippy . cmap cpure . f)
