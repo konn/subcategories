@@ -34,6 +34,7 @@ dependencies:
 - vector
 - primitive
 - template-haskell
+- these
 - unordered-containers
 
 library:
