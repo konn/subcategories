@@ -45,6 +45,7 @@ instance Semigroup w => CApplicative (Const w) where
   {-# INLINE (<. ) #-}
   ( .>) = coerce @(w -> w -> w) (<>)
   {-# INLINE ( .>) #-}
+
 instance CApplicative []
 instance CApplicative IO
 instance CApplicative STM
