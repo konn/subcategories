@@ -84,7 +84,7 @@ instance CBind Set.Set where
   {-# INLINE cjoin #-}
 
 instance CBind (WrapMono IS.IntSet) where
-  (>>-) = flip ofoldMap . coerceToMono
+  (>>-) = withMonoCoercible $ flip ofoldMap
   {-# INLINE (>>-) #-}
 
 instance CBind NonEmpty where

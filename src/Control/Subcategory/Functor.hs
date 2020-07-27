@@ -10,7 +10,7 @@ module Control.Subcategory.Functor
     defaultEmapConst,
     WrapFunctor (..),
     WrapMono (WrapMono, unwrapMono),
-    coerceToMono,
+    coerceToMono, withMonoCoercible,
   )
 where
 import qualified Control.Applicative                  as App

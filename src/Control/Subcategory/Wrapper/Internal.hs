@@ -47,3 +47,9 @@ pattern WrapMono {unwrapMono} = WrapMono' unwrapMono
 coerceToMono :: WrapMono mono (Element mono) -> mono
 {-# INLINE coerceToMono #-}
 coerceToMono = coerce
+
+withMonoCoercible
+  :: (Coercible (WrapMono mono (Element mono)) mono => r)
+  -> r
+{-# INLINE withMonoCoercible #-}
+withMonoCoercible = id
