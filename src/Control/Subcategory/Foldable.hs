@@ -636,5 +636,5 @@ fmap concat . forM
 
 {-# RULES
 "cindex/IsSequence" forall (xs :: (MT.Index mono ~ Int, IsSequence mono) => WrapMono mono b).
-  cindex xs = withMonoCoercible (indexEx $ coerce @_ @mono xs)
+  cindex xs = withMonoCoercible (coerce @(mono -> Int -> Element mono) indexEx xs)
   #-}
