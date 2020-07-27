@@ -16,32 +16,32 @@ import           Shared
 import           Test.Hspec
 import           Test.Inspection
 
-emap_list :: (a -> b) -> [a] -> [b]
-emap_list = emap
+cmap_list :: (a -> b) -> [a] -> [b]
+cmap_list = cmap
 
 map_list :: (a -> b) -> [a] -> [b]
 map_list = map
 
-emap_seq :: (a -> b) -> Seq.Seq a -> Seq.Seq b
-emap_seq = emap
+cmap_seq :: (a -> b) -> Seq.Seq a -> Seq.Seq b
+cmap_seq = cmap
 
 map_seq :: (a -> b) -> Seq.Seq a -> Seq.Seq b
 map_seq = fmap
 
-emap_intset :: (Int -> Int) -> WrapMono IntSet Int -> WrapMono IntSet Int
-emap_intset = emap
+cmap_intset :: (Int -> Int) -> WrapMono IntSet Int -> WrapMono IntSet Int
+cmap_intset = cmap
 
 map_intset :: (Int -> Int) -> IntSet -> IntSet
 map_intset = IS.map
 
-emap_uvec :: (Int -> Bool) -> U.Vector Int -> U.Vector Bool
-emap_uvec = emap
+cmap_uvec :: (Int -> Bool) -> U.Vector Int -> U.Vector Bool
+cmap_uvec = cmap
 
 map_uvec :: (Int -> Bool) -> U.Vector Int -> U.Vector Bool
 map_uvec = U.map
 
-emap_bvec :: (a -> b) -> V.Vector a -> V.Vector b
-emap_bvec = emap
+cmap_bvec :: (a -> b) -> V.Vector a -> V.Vector b
+cmap_bvec = cmap
 
 map_bvec :: (a -> b) -> V.Vector a -> V.Vector b
 map_bvec = V.map
@@ -54,26 +54,26 @@ foldr_uvec = U.foldr
 
 main :: IO ()
 main = hspec $ do
-  describe "emap" $ do
+  describe "cmap" $ do
     describe "list" $
       $(inspecting "has the same representation as Prelude.map"
-        $ 'emap_list ==- 'map_list
+        $ 'cmap_list ==- 'map_list
       )
     describe "Seq" $
       $(inspecting "has the same representation as fmap"
-        $ 'emap_seq ==- 'map_seq
+        $ 'cmap_seq ==- 'map_seq
       )
     describe "IntSet" $
       $(inspecting "has the same representation as IntSet.map"
-        $ 'emap_intset ==- 'map_intset
+        $ 'cmap_intset ==- 'map_intset
       )
     describe "BVector" $
       $(inspecting "has the same representation as V.map"
-        $ 'emap_bvec ==- 'map_bvec
+        $ 'cmap_bvec ==- 'map_bvec
       )
     describe "UVector" $
       $(inspecting "has the same representation as U.map"
-        $ 'emap_uvec ==- 'map_uvec
+        $ 'cmap_uvec ==- 'map_uvec
       )
   describe "cfoldrmap" $ do
     describe "UVector" $

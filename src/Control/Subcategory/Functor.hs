@@ -7,7 +7,7 @@
 module Control.Subcategory.Functor
   ( Constrained(..), Cat(), CFunctor (..),
     (<$:>),
-    defaultEmapConst,
+    defaultCmapConst,
     WrapFunctor (..),
     WrapMono (WrapMono, unwrapMono),
     coerceToMono, withMonoCoercible,
@@ -52,8 +52,9 @@ import qualified Data.Vector.Storable            as S
 import qualified Data.Vector.Unboxed             as U
 import           Foreign.Ptr                     (Ptr)
 import           GHC.Conc                        (STM)
-import           GHC.Generics                    ((:*:), (:+:), (:.:), K1, M1,
-                                                  Par1, Rec1, U1, URec, V1)
+import           GHC.Generics                    ((:*:) (..), (:+:) (..),
+                                                  (:.:) (..), K1, M1, Par1,
+                                                  Rec1, U1, URec, V1)
 import qualified System.Console.GetOpt           as GetOpt
 import           Text.ParserCombinators.ReadP    (ReadP)
 import           Text.ParserCombinators.ReadPrec (ReadPrec)
@@ -68,25 +69,25 @@ class Constrained (f :: Type -> Type) where
   type Cat' f a = ()
 
 class Constrained f => CFunctor f where
-  emap :: (Cat f a, Cat f b) => (a -> b) -> f a -> f b
-  default emap :: Functor f => (a -> b) -> f a -> f b
-  emap = fmap
-  {-# INLINE emap #-}
+  cmap :: (Cat f a, Cat f b) => (a -> b) -> f a -> f b
+  default cmap :: Functor f => (a -> b) -> f a -> f b
+  cmap = fmap
+  {-# INLINE cmap #-}
   (<$:) :: (Cat f a, Cat f b) => a -> f b -> f a
-  (<$:) = emap . const
+  (<$:) = cmap . const
   {-# INLINE (<$:) #-}
 
-defaultEmapConst :: (CFunctor f, Cat f a, Cat f b) => a -> f b -> f a
-defaultEmapConst = emap . const
-{-# INLINE defaultEmapConst #-}
+defaultCmapConst :: (CFunctor f, Cat f a, Cat f b) => a -> f b -> f a
+defaultCmapConst = cmap . const
+{-# INLINE defaultCmapConst #-}
 
 instance Constrained (WrapFunctor f) where
   type Cat' (WrapFunctor f) a = ()
 
 instance Functor f => CFunctor (WrapFunctor f) where
-  emap :: (a -> b) -> WrapFunctor f a -> WrapFunctor f b
-  emap = fmap
-  {-# INLINE emap #-}
+  cmap :: (a -> b) -> WrapFunctor f a -> WrapFunctor f b
+  cmap = fmap
+  {-# INLINE cmap #-}
   (<$:) :: a -> WrapFunctor f b -> WrapFunctor f a
   (<$:) = (<$)
   {-# INLINE (<$:) #-}
@@ -216,34 +217,40 @@ instance CFunctor (K1 i c)
 
 instance Constrained (f :+: g) where
   type Cat' (f :+: g) a = (Cat f a, Cat g a)
-instance (Functor f, Functor g) => CFunctor (f :+: g)
+instance (CFunctor f, CFunctor g) => CFunctor (f :+: g) where
+  cmap f (L1 xs) = L1 $ cmap f xs
+  cmap f (R1 xs) = R1 $ cmap f xs
+  {-# INLINE [1] cmap #-}
 instance Constrained (f :*: g) where
   type Cat' (f :*: g) a = (Cat f a, Cat g a)
-instance (Functor f, Functor g) => CFunctor (f :*: g)
+instance (CFunctor f, CFunctor g) => CFunctor (f :*: g) where
+  cmap f (l :*: r) = cmap f l :*: cmap f r
+  {-# INLINE cmap #-}
 
 instance Constrained (f :.: (g :: Type -> Type)) where
   type Cat' (f :.: g) a = (Cat f (g a), Cat g a)
-instance (Functor f, Functor g) => CFunctor (f :.: g)
+instance (CFunctor f, CFunctor g) => CFunctor (f :.: g) where
+  cmap f gfa = Comp1 $ cmap (cmap f) $ unComp1 gfa
+  {-# INLINE cmap #-}
 instance (Constrained f, Constrained g) => Constrained (SOP.Sum f g) where
   type Cat' (SOP.Sum f g) a = (Cat f a, Cat g a)
 
 instance (CFunctor f, CFunctor g) => CFunctor (SOP.Sum f g) where
-  emap f (SOP.InL a) = SOP.InL $ emap f a
+  cmap f (SOP.InL a) = SOP.InL $ cmap f a
+  cmap f (SOP.InR b) = SOP.InR $ cmap f b
+  {-# INLINE cmap #-}
 
-  emap f (SOP.InR b) = SOP.InR $ emap f b
-  {-# INLINE emap #-}
-
-  (<$:) = defaultEmapConst
+  (<$:) = defaultCmapConst
   {-# INLINE (<$:) #-}
 
 instance (Constrained f, Constrained g) => Constrained (SOP.Product f g) where
   type Cat' (SOP.Product f g) a = (Cat f a, Cat g a)
 
 instance (CFunctor f, CFunctor g) => CFunctor (SOP.Product f g) where
-  emap f (SOP.Pair a b) = SOP.Pair (emap f a) (emap f b)
-  {-# INLINE emap #-}
+  cmap f (SOP.Pair a b) = SOP.Pair (cmap f a) (cmap f b)
+  {-# INLINE cmap #-}
 
-  (<$:) = defaultEmapConst
+  (<$:) = defaultCmapConst
   {-# INLINE (<$:) #-}
 
 instance (Constrained (f ::Type -> Type), Constrained (g :: Type -> Type))
@@ -251,8 +258,8 @@ instance (Constrained (f ::Type -> Type), Constrained (g :: Type -> Type))
   type Cat' (SOP.Compose f g) a = (Cat g a, Cat f (g a))
 
 instance (CFunctor f, CFunctor g) => CFunctor (SOP.Compose f g) where
-  emap f (SOP.Compose a) = SOP.Compose $ emap (emap f) a
-  (<$:) = defaultEmapConst
+  cmap f (SOP.Compose a) = SOP.Compose $ cmap (cmap f) a
+  (<$:) = defaultCmapConst
 
   {-# INLINE (<$:) #-}
 
@@ -270,7 +277,7 @@ instance MonoFunctor IS.IntSet where
   omap = IS.map
 
 instance MonoFunctor mono => CFunctor (WrappedMono mono) where
-  emap = omap
+  cmap = omap
   (<$:) = omap . const
 #endif
 
@@ -279,12 +286,11 @@ instance Constrained (WrapMono mono) where
 
 instance {-# OVERLAPPABLE #-} MonoFunctor a
       => CFunctor (WrapMono a) where
-  emap f = WrapMono . omap f . unwrapMono
+  cmap f = WrapMono . omap f . unwrapMono
+  {-# INLINE [1] cmap #-}
 
-  {-# INLINE emap #-}
-  (<$:) = defaultEmapConst
-
-  {-# INLINE (<$:) #-}
+  (<$:) = defaultCmapConst
+  {-# INLINE [1] (<$:) #-}
 
 
 instance Constrained IM.IntMap
@@ -297,18 +303,18 @@ instance Constrained Set.Set where
   type Cat' Set.Set a = Ord a
 
 instance CFunctor Set.Set where
-  emap = Set.map
-  {-# INLINE emap #-}
-  (<$:) = defaultEmapConst
-  {-# INLINE (<$:) #-}
+  cmap = Set.map
+  {-# INLINE [1] cmap #-}
+  (<$:) = defaultCmapConst
+  {-# INLINE [1] (<$:) #-}
 
 instance Constrained HS.HashSet where
   type Cat' HS.HashSet a = (Hashable a, Eq a)
 
 instance CFunctor HS.HashSet where
-  emap = HS.map
-  {-# INLINE emap #-}
-  (<$:) = defaultEmapConst
+  cmap = HS.map
+  {-# INLINE cmap #-}
+  (<$:) = defaultCmapConst
   {-# INLINE (<$:) #-}
 
 instance Constrained (HM.HashMap k)
@@ -319,27 +325,27 @@ instance CFunctor Tree.Tree
 
 infixl 4 <$:>
 (<$:>) :: (CFunctor f, Cat f a, Cat f b) => (a -> b) -> f a -> f b
-(<$:>) = emap
-{-# INLINE (<$:>) #-}
+(<$:>) = cmap
+{-# INLINE [1] (<$:>) #-}
 
 instance Constrained V.Vector
 instance CFunctor V.Vector where
-  emap = V.map
-  {-# INLINE [1] emap #-}
+  cmap = V.map
+  {-# INLINE [1] cmap #-}
 
 instance Constrained U.Vector where
   type Cat' U.Vector a = U.Unbox a
 instance CFunctor U.Vector where
-  emap = U.map
-  {-# INLINE [1] emap #-}
+  cmap = U.map
+  {-# INLINE [1] cmap #-}
 instance Constrained S.Vector where
   type Cat' S.Vector a = S.Storable a
 instance CFunctor S.Vector where
-  emap = S.map
-  {-# INLINE [1] emap #-}
+  cmap = S.map
+  {-# INLINE [1] cmap #-}
 
 instance Constrained P.Vector where
   type Cat' P.Vector a = P.Prim a
 instance CFunctor P.Vector where
-  emap = P.map
-  {-# INLINE [1] emap #-}
+  cmap = P.map
+  {-# INLINE [1] cmap #-}

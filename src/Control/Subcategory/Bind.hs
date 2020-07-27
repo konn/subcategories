@@ -28,7 +28,7 @@ import           Text.ParserCombinators.ReadPrec (ReadPrec)
 class CFunctor m => CBind m where
   (>>-) :: (Cat m a, Cat m b) => m a -> (a -> m b) -> m b
   default (>>-) :: (Cat m a, Cat m b, Cat m (m b)) => m a -> (a -> m b) -> m b
-  m >>- f = cjoin (emap f m)
+  m >>- f = cjoin (cmap f m)
   cjoin :: (Cat m (m a), Cat m a) => m (m a) -> m a
   cjoin = (>>- id)
 
