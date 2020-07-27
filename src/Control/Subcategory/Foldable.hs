@@ -1,7 +1,11 @@
-{-# LANGUAGE CPP, DefaultSignatures, DerivingVia, LambdaCase    #-}
-{-# LANGUAGE StandaloneDeriving, TemplateHaskell, TypeOperators #-}
+{-# LANGUAGE CPP, DefaultSignatures, DerivingVia, LambdaCase            #-}
+{-# LANGUAGE QuantifiedConstraints, StandaloneDeriving, TemplateHaskell #-}
+{-# LANGUAGE TypeOperators                                              #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-module Control.Subcategory.Foldable where
+module Control.Subcategory.Foldable
+  ( CFoldable(..), CTraversable(..),
+    CFreeMonoid(), cctraverseFreeMonoid
+  ) where
 import           Control.Applicative                  (ZipList, getZipList)
 import           Control.Monad
 import           Control.Subcategory.Applicative
@@ -160,17 +164,31 @@ class Constrained f => CFoldable f where
   {-# INLINE [1] cproduct #-}
   cproduct = getProduct #. cfoldMap Product
 
-  ctraverse_
+  cctraverse_
     :: (CApplicative g, CPointed g, Cat g (), Cat f a, Cat g b)
+    => (a -> g b)
+    -> f a -> g ()
+  {-# INLINE [1] cctraverse_ #-}
+  cctraverse_ f = cfoldr c (cpure ())
+    where
+      {-# INLINE c #-}
+      c x k = f x .> k
+
+  ctraverse_
+    :: (Applicative g, CPointed g, Cat g (), Cat f a, Cat g b)
     => (a -> g b)
     -> f a -> g ()
   {-# INLINE [1] ctraverse_ #-}
   ctraverse_ f = cfoldr c (cpure ())
     where
       {-# INLINE c #-}
-      c x k = f x .> k
+      c x k = f x *> k
 
 data Eith' a b = Left' !a | Right' !b
+
+instance Traversable f => CTraversable (WrapFunctor f) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 
 instance Foldable f => CFoldable (WrapFunctor f) where
   cfoldMap = foldMap
@@ -213,31 +231,63 @@ instance Foldable f => CFoldable (WrapFunctor f) where
   {-# INLINE [1] csum #-}
   cproduct = product
   {-# INLINE [1] cproduct #-}
+  ctraverse_ = traverse_
+  {-# INLINE [1] ctraverse_ #-}
 
 {-# RULES
-"ctraverse_/traverse_"
+"cctraverse_/traverse_"
   forall (f :: Applicative f => a -> f b) (tx :: Foldable t => t a).
-  ctraverse_ f tx = traverse_ f tx
+  cctraverse_ f tx = traverse_ f tx
   #-}
 
 {-# RULES
 "cindex/List"
   cindex = (!!)
   #-}
+
+class (CFunctor f, CFoldable f) => CTraversable f where
+  -- | __N.B.__ If we require @g@ to be 'CApplicative'
+  --   we cannot directly lift plain 'Traversable' to 'CTraversable'.
+  --   This is rather annoying, so we require the strongest possible
+  --   constraint to @g@ here.
+  ctraverse
+    :: (Cat f a, Cat f b, Applicative g)
+    => (a -> g b) -> f a -> g (f b)
+
 deriving via WrapFunctor []
   instance CFoldable []
+instance CTraversable [] where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor Maybe
   instance CFoldable Maybe
+instance CTraversable Maybe where
+  ctraverse = traverse
 deriving via WrapFunctor (Either e)
   instance CFoldable (Either e)
+instance CTraversable (Either e) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor IM.IntMap
   instance CFoldable IM.IntMap
+instance CTraversable IM.IntMap where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor (M.Map k)
   instance CFoldable (M.Map k)
+instance Ord k => CTraversable (M.Map k) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor (HM.HashMap k)
   instance CFoldable (HM.HashMap k)
+instance CTraversable (HM.HashMap k) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor Seq.Seq
   instance CFoldable Seq.Seq
+instance CTraversable Seq.Seq where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 {-# RULES
 "cindex/Seq"
   cindex = Seq.index
@@ -245,8 +295,14 @@ deriving via WrapFunctor Seq.Seq
 
 deriving via WrapFunctor Par1
   instance CFoldable Par1
+instance CTraversable Par1 where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor NonEmpty
   instance CFoldable NonEmpty
+instance CTraversable NonEmpty where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 {-# RULES
 "cindex/NonEmpty"
   cindex = (NE.!!)
@@ -254,18 +310,39 @@ deriving via WrapFunctor NonEmpty
 
 deriving via WrapFunctor Down
   instance CFoldable Down
+instance CTraversable Down where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor Mon.Last
   instance CFoldable Mon.Last
+instance CTraversable Mon.Last where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor Mon.First
   instance CFoldable Mon.First
+instance CTraversable Mon.First where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor Sem.Last
   instance CFoldable Sem.Last
+instance CTraversable Sem.Last where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor Sem.First
   instance CFoldable Sem.First
+instance CTraversable Sem.First where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor Identity
   instance CFoldable Identity
+instance CTraversable Identity where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor ZipList
   instance CFoldable ZipList
+instance CTraversable ZipList where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 {-# RULES
 "cindex/ZipList"
   cindex = (!!) . getZipList
@@ -273,44 +350,95 @@ deriving via WrapFunctor ZipList
 
 deriving via WrapFunctor Option
   instance CFoldable Option
+instance CTraversable Option where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor Min
   instance CFoldable Min
+instance CTraversable Min where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor Max
   instance CFoldable Max
+instance CTraversable Max where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor Complex
   instance CFoldable Complex
+instance CTraversable Complex where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor (V1 :: Type -> Type)
   instance CFoldable (V1 :: Type -> Type)
+instance CTraversable (V1 :: Type -> Type) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor (U1 :: Type -> Type)
   instance CFoldable (U1 :: Type -> Type)
+instance CTraversable (U1 :: Type -> Type) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor ((,) a)
   instance CFoldable ((,) a)
+instance CTraversable ((,) a) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor (Proxy :: Type -> Type)
   instance CFoldable (Proxy :: Type -> Type)
+instance CTraversable (Proxy :: Type -> Type) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor (Arg a)
   instance CFoldable (Arg a)
+instance CTraversable (Arg a) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor (Rec1 (f :: Type -> Type))
   instance Foldable f => CFoldable (Rec1 (f :: Type -> Type))
 deriving via WrapFunctor (URec Char :: Type -> Type)
   instance CFoldable (URec Char :: Type -> Type)
+instance CTraversable (URec Char :: Type -> Type) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor (URec Double :: Type -> Type)
   instance CFoldable (URec Double :: Type -> Type)
+instance CTraversable (URec Double :: Type -> Type) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor (URec Float :: Type -> Type)
   instance CFoldable (URec Float :: Type -> Type)
+instance CTraversable (URec Float :: Type -> Type) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor (URec Int :: Type -> Type)
   instance CFoldable (URec Int :: Type -> Type)
+instance CTraversable (URec Int :: Type -> Type) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor (URec Word :: Type -> Type)
   instance CFoldable (URec Word :: Type -> Type)
+instance CTraversable (URec Word :: Type -> Type) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor (URec (Ptr ()) :: Type -> Type)
   instance CFoldable (URec (Ptr ()) :: Type -> Type)
+instance CTraversable (URec (Ptr ()) :: Type -> Type) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving newtype
   instance CFoldable f => CFoldable (Alt f)
 deriving newtype
   instance CFoldable f => CFoldable (Ap f)
 deriving via WrapFunctor (Const m :: Type -> Type)
   instance CFoldable (Const m :: Type -> Type)
+instance CTraversable (Const m :: Type -> Type) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 deriving via WrapFunctor (K1 i c :: Type -> Type)
   instance CFoldable (K1 i c :: Type -> Type)
+instance CTraversable (K1 i c :: Type -> Type) where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
 
 instance (CFoldable f, CFoldable g) => CFoldable (f :+: g) where
   {-# INLINE [1] cfoldMap #-}
@@ -391,6 +519,16 @@ instance (CFoldable f, CFoldable g) => CFoldable (f :+: g) where
     L1 xs -> cproduct xs
     R1 xs -> cproduct xs
   {-# INLINE [1] cproduct #-}
+  ctraverse_ f = \case
+    L1 xs -> ctraverse_ f xs
+    R1 xs -> ctraverse_ f xs
+  {-# INLINE [1] ctraverse_ #-}
+
+instance (CTraversable f, CTraversable g) => CTraversable (f :+: g) where
+  ctraverse f = \case
+    L1 xs -> L1 <$> ctraverse f xs
+    R1 xs -> R1 <$> ctraverse f xs
+  {-# INLINE [1] ctraverse #-}
 
 instance (CFoldable f, CFoldable g) => CFoldable (f :*: g) where
   {-# INLINE [1] cfoldMap #-}
@@ -414,6 +552,12 @@ instance (CFoldable f, CFoldable g) => CFoldable (f :*: g) where
   {-# INLINE [1] csum #-}
   cproduct (l :*: r) = cproduct l * cproduct r
   {-# INLINE [1] cproduct #-}
+  ctraverse_ f (l :*: r) = ctraverse_ f l *> ctraverse_ f r
+  {-# INLINE [1] ctraverse_ #-}
+
+instance (CTraversable f, CTraversable g) => CTraversable (f :*: g) where
+  ctraverse f (l :*: r) =
+    (:*:) <$> ctraverse f l <*> ctraverse f r
 
 instance (CFoldable f, CFoldable g) => CFoldable (SOP.Sum f g) where
   {-# INLINE [1] cfoldMap #-}
@@ -494,7 +638,16 @@ instance (CFoldable f, CFoldable g) => CFoldable (SOP.Sum f g) where
     SOP.InL xs -> cproduct xs
     SOP.InR xs -> cproduct xs
   {-# INLINE [1] cproduct #-}
+  ctraverse_ f = \case
+    SOP.InL xs -> ctraverse_ f xs
+    SOP.InR xs -> ctraverse_ f xs
+  {-# INLINE [1] ctraverse_ #-}
 
+instance (CTraversable f, CTraversable g) => CTraversable (SOP.Sum f g) where
+  ctraverse f = \case
+    SOP.InL xs -> SOP.InL <$> ctraverse f xs
+    SOP.InR xs -> SOP.InR <$> ctraverse f xs
+  {-# INLINE [1] ctraverse #-}
 
 instance (CFoldable f, CFoldable g) => CFoldable (SOP.Product f g) where
   {-# INLINE [1] cfoldMap #-}
@@ -518,6 +671,14 @@ instance (CFoldable f, CFoldable g) => CFoldable (SOP.Product f g) where
   {-# INLINE [1] csum #-}
   cproduct (SOP.Pair l r) = cproduct l * cproduct r
   {-# INLINE [1] cproduct #-}
+  ctraverse_ f (SOP.Pair l r) =
+    ctraverse_ f l *> ctraverse_ f r
+  {-# INLINE ctraverse_ #-}
+
+instance (CTraversable f, CTraversable g) => CTraversable (SOP.Product f g) where
+  {-# INLINE [1] ctraverse #-}
+  ctraverse f (SOP.Pair l r) =
+    SOP.Pair <$> ctraverse f l <*> ctraverse f r
 
 instance CFoldable Set.Set where
   cfoldMap = ofoldMap
@@ -539,6 +700,14 @@ instance CFoldable Set.Set where
   ctoList = Set.toList
   {-# INLINE [1] ctoList #-}
 
+instance CTraversable Set.Set where
+  -- TODO: more efficient implementation
+  ctraverse f =
+      fmap Set.fromList
+    . traverse f
+    . Set.toList
+  {-# INLINE [1] ctraverse #-}
+
 instance CFoldable HS.HashSet where
   cfoldMap = ofoldMap
   {-# INLINE [1] cfoldMap #-}
@@ -550,6 +719,14 @@ instance CFoldable HS.HashSet where
   {-# INLINE [1] celem #-}
   ctoList = HS.toList
   {-# INLINE [1] ctoList #-}
+
+instance CTraversable HS.HashSet where
+  -- TODO: more efficient implementation
+  ctraverse f =
+      fmap HS.fromList
+    . traverse f
+    . HS.toList
+  {-# INLINE [1] ctraverse #-}
 
 {-# RULES
 "celem/IntSet"
@@ -596,6 +773,11 @@ instance MonoFoldable mono => CFoldable (WrapMono mono) where
   {-# INLINE [1] csum #-}
   cproduct = oproduct
   {-# INLINE [1] cproduct #-}
+  ctraverse_ = otraverse_
+  {-# INLINE [1] ctraverse_ #-}
+
+instance MonoTraversable mono => CTraversable (WrapMono mono) where
+  ctraverse = \f -> fmap WrapMono . otraverse f . unwrapMono
 
 fmap concat . forM
   (map conT [''V.Vector, ''U.Vector, ''S.Vector, ''P.Vector])
@@ -634,7 +816,47 @@ fmap concat . forM
       ctoList = G.toList
     |]
 
+instance CTraversable V.Vector where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
+
+instance CTraversable U.Vector where
+  ctraverse = \f -> fmap V.convert . traverse f . U.convert @_ @_ @V.Vector
+  {-# INLINE [1] ctraverse #-}
+
+instance CTraversable S.Vector where
+  ctraverse = \f -> fmap S.convert . traverse f . U.convert @_ @_ @V.Vector
+  {-# INLINE [1] ctraverse #-}
+
+instance CTraversable P.Vector where
+  ctraverse = \f -> fmap P.convert . traverse f . U.convert @_ @_ @V.Vector
+  {-# INLINE [1] ctraverse #-}
+
 {-# RULES
 "cindex/IsSequence" forall (xs :: (MT.Index mono ~ Int, IsSequence mono) => WrapMono mono b).
   cindex xs = withMonoCoercible (coerce @(mono -> Int -> Element mono) indexEx xs)
   #-}
+
+-- | Free monoid functor from fullsubcategory.
+--   It must be a pointed foldable functor with the property
+--   that for any 'Monoid' @w@ and @f :: a -> w@,
+--   @'cfoldMap' f@ must be a monoid homomorphism and the following
+--   must be hold:
+--
+--    @
+--       'cfoldMap' f . 'cpure' == f
+--    @
+--
+--   Hence, @'Set's@ cannot be a free monoid functor;
+class (CFunctor f, forall x. Monoid (f x), CPointed f, CFoldable f)
+  => CFreeMonoid f
+
+cctraverseFreeMonoid
+  ::  ( CFreeMonoid t, CApplicative f, CPointed f,
+        Cat t a, Cat f (t b), Cat f b, Cat t b,
+        Cat f (t b, t b)
+      )
+  => (a -> f b) -> t a -> f (t b)
+cctraverseFreeMonoid f =
+  runCApp . cfoldMap (CApp . cmap cpure . f)
+
