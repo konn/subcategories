@@ -36,6 +36,9 @@ import qualified Data.Monoid                          as Mon
 import           Data.MonoTraversable                 hiding (WrappedMono,
                                                        unwrapMono)
 import           Data.Ord                             (Down)
+import qualified Data.Primitive.Array                 as A
+import qualified Data.Primitive.PrimArray             as PA
+import qualified Data.Primitive.SmallArray            as SA
 import           Data.Proxy                           (Proxy)
 import           Data.Semigroup                       (Arg, Max (..), Min (..),
                                                        Option)
@@ -678,6 +681,36 @@ instance (CFoldable f, CFoldable g) => CFoldable (SOP.Product f g) where
     ctraverse_ f l *> ctraverse_ f r
   {-# INLINE ctraverse_ #-}
 
+deriving via WrapFunctor SA.SmallArray instance CFoldable SA.SmallArray
+deriving via WrapFunctor A.Array instance CFoldable A.Array
+instance CFoldable PA.PrimArray where
+  cfoldr = PA.foldrPrimArray
+  {-# INLINE [1] cfoldr #-}
+  cfoldl' = PA.foldlPrimArray'
+  {-# INLINE [1] cfoldl' #-}
+  cfoldl = PA.foldlPrimArray
+  {-# INLINE [1] cfoldl #-}
+  clength = PA.sizeofPrimArray
+  {-# INLINE [1] clength #-}
+  csum = PA.foldlPrimArray' (+) 0
+  {-# INLINE [1] csum #-}
+  cproduct = PA.foldlPrimArray' (*) 1
+  {-# INLINE [1] cproduct #-}
+  ctraverse_ = PA.traversePrimArray_
+  {-# INLINE [1] ctraverse_ #-}
+
+instance CTraversable PA.PrimArray where
+  ctraverse = PA.traversePrimArray
+  {-# INLINE [1] ctraverse #-}
+
+instance CTraversable SA.SmallArray where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
+
+instance CTraversable A.Array where
+  ctraverse = traverse
+  {-# INLINE [1] ctraverse #-}
+
 instance (CTraversable f, CTraversable g) => CTraversable (SOP.Product f g) where
   {-# INLINE [1] ctraverse #-}
   ctraverse f (SOP.Pair l r) =
@@ -853,6 +886,12 @@ instance CTraversable P.Vector where
 --   Hence, @'Set's@ cannot be a free monoid functor;
 class (CFunctor f, forall x. Dom f x => Monoid (f x), CPointed f, CFoldable f)
   => CFreeMonoid f
+
+instance CFreeMonoid []
+instance CFreeMonoid V.Vector
+instance CFreeMonoid U.Vector
+instance CFreeMonoid S.Vector
+instance CFreeMonoid P.Vector
 
 cctraverseFreeMonoid
   ::  ( CFreeMonoid t, CApplicative f, CPointed f,

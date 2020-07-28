@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DerivingVia, StandaloneDeriving, TypeOperators #-}
 module Control.Subcategory.Pointed where
 import Control.Subcategory.Functor
 
@@ -15,11 +15,18 @@ import qualified Data.Monoid                     as Mon
 import           Data.MonoTraversable            (MonoPointed, opoint)
 import           Data.Ord                        (Down)
 import qualified Data.Pointed                    as Pt
+import qualified Data.Primitive.Array            as A
+import qualified Data.Primitive.PrimArray        as PA
+import qualified Data.Primitive.SmallArray       as SA
 import           Data.Proxy                      (Proxy)
 import qualified Data.Semigroup                  as Sem
 import qualified Data.Sequence                   as Seq
 import qualified Data.Set                        as Set
 import qualified Data.Tree                       as Tree
+import qualified Data.Vector                     as V
+import qualified Data.Vector.Primitive           as P
+import qualified Data.Vector.Storable            as S
+import qualified Data.Vector.Unboxed             as U
 import           GHC.Conc                        (STM)
 import           GHC.Generics                    ((:*:) (..), (:.:) (..))
 import           GHC.Generics                    (Par1, Rec1, U1)
@@ -94,3 +101,31 @@ instance CPointed HS.HashSet where
 
 instance MonoPointed mono => CPointed (WrapMono mono) where
   cpure = opoint
+
+instance CPointed V.Vector where
+  cpure = V.singleton
+  {-# INLINE [1] cpure #-}
+
+instance CPointed U.Vector where
+  cpure = U.singleton
+  {-# INLINE [1] cpure #-}
+
+instance CPointed S.Vector where
+  cpure = S.singleton
+  {-# INLINE [1] cpure #-}
+
+instance CPointed P.Vector where
+  cpure = P.singleton
+  {-# INLINE [1] cpure #-}
+
+instance CPointed PA.PrimArray where
+  cpure = PA.replicatePrimArray 1
+  {-# INLINE [1] cpure #-}
+
+instance CPointed SA.SmallArray where
+  cpure = SA.smallArrayFromListN 1 . pure
+  {-# INLINE [1] cpure #-}
+
+instance CPointed A.Array where
+  cpure = A.fromListN 1 . pure
+  {-# INLINE [1] cpure #-}

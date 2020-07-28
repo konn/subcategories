@@ -22,10 +22,13 @@ import qualified Data.HashSet                    as HS
 import qualified Data.IntMap                     as IM
 import           Data.List.NonEmpty              (NonEmpty)
 import qualified Data.Map                        as Map
+import qualified Data.Primitive.Array            as A
+import qualified Data.Primitive.SmallArray       as SA
 import qualified Data.Semigroup                  as Sem
 import qualified Data.Sequence                   as Seq
 import qualified Data.Set                        as Set
 import qualified Data.Tree                       as Tree
+import qualified Data.Vector                     as V
 import           GHC.Conc                        (STM)
 import           Text.ParserCombinators.ReadP    (ReadP)
 import           Text.ParserCombinators.ReadPrec (ReadPrec)
@@ -50,6 +53,9 @@ instance CApplicative []
 instance CApplicative IO
 instance CApplicative STM
 instance CApplicative ReadP
+instance CApplicative V.Vector
+instance CApplicative SA.SmallArray
+instance CApplicative A.Array
 instance CApplicative ReadPrec
 instance CApplicative (SST.ST s)
 instance CApplicative (LST.ST s)

@@ -6,6 +6,7 @@ module Control.Subcategory.Zip
     module Control.Subcategory.Semialign
   )where
 import           Control.Applicative           (ZipList (..))
+import           Control.Monad.Zip             (MonadZip (mzip), mzipWith)
 import           Control.Subcategory.Functor
 import           Control.Subcategory.Semialign
 import           Data.Coerce                   (coerce)
@@ -17,6 +18,9 @@ import qualified Data.HashMap.Strict           as HM
 import qualified Data.IntMap.Strict            as IM
 import qualified Data.List.NonEmpty            as NE
 import qualified Data.Map.Strict               as M
+import qualified Data.Primitive.Array          as A
+import qualified Data.Primitive.PrimArray      as PA
+import qualified Data.Primitive.SmallArray     as SA
 import           Data.Proxy
 import           Data.Semigroup                (Option (..))
 import qualified Data.Sequence                 as Seq
@@ -227,3 +231,22 @@ instance CRepeat ((->) e) where
   crepeat = const
   {-# INLINE [1] crepeat #-}
 #endif
+
+instance CZip SA.SmallArray where
+  czip = mzip
+  {-# INLINE [1] czip #-}
+  czipWith = mzipWith
+  {-# INLINE [1] czipWith #-}
+
+instance CZip A.Array where
+  czip = mzip
+  {-# INLINE [1] czip #-}
+  czipWith = mzipWith
+  {-# INLINE [1] czipWith #-}
+
+instance CZip PA.PrimArray where
+  czipWith f l r =
+    PA.generatePrimArray
+      (PA.sizeofPrimArray l `min` PA.sizeofPrimArray r) $ \n ->
+        f (PA.indexPrimArray l n) (PA.indexPrimArray r n)
+  {-# INLINE [1] czipWith #-}

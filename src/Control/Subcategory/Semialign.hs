@@ -1,9 +1,12 @@
-{-# LANGUAGE CPP, DerivingStrategies, DerivingVia                          #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving, StandaloneDeriving, TypeOperators #-}
+{-# LANGUAGE BangPatterns, CPP, DerivingStrategies, DerivingVia         #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, MultiWayIf, StandaloneDeriving #-}
+{-# LANGUAGE TypeOperators                                              #-}
 module Control.Subcategory.Semialign
   ( CSemialign(..), CAlign(..)
   ) where
 import           Control.Applicative         (ZipList)
+import           Control.Monad               (forM_)
+import           Control.Monad.ST.Strict     (runST)
 import           Control.Subcategory.Functor
 import           Data.Coerce
 import           Data.Functor.Compose        (Compose (..))
@@ -15,6 +18,9 @@ import           Data.IntMap.Strict          (IntMap)
 import qualified Data.IntSet                 as IS
 import           Data.List.NonEmpty          (NonEmpty)
 import           Data.Map                    (Map)
+import qualified Data.Primitive.Array        as A
+import qualified Data.Primitive.PrimArray    as PA
+import qualified Data.Primitive.SmallArray   as SA
 import           Data.Proxy                  (Proxy)
 import           Data.Semialign
 import           Data.Semigroup              (Option (..))
@@ -163,4 +169,88 @@ instance CSemialign P.Vector where
 
 instance CAlign P.Vector where
   cnil = P.empty
+  {-# INLINE [1] cnil #-}
+
+instance CSemialign SA.SmallArray where
+  calignWith f l r = runST $ do
+    let !lenL = length l
+        !lenR = length r
+        (isLftShort, thresh, len)
+          | lenL < lenR = (True, lenL, lenR)
+          | otherwise = (False, lenR, lenL)
+    sa <- SA.newSmallArray len (error "Uninitialised element")
+    forM_ [0..len-1] $ \n ->
+      if  | n == len -> pure ()
+          | n < thresh ->
+            SA.writeSmallArray sa n
+            $ f $ These
+              (SA.indexSmallArray l n)
+              (SA.indexSmallArray r n)
+          | isLftShort ->
+            SA.writeSmallArray sa n
+            $ f $ That $ SA.indexSmallArray r n
+          | otherwise ->
+            SA.writeSmallArray sa n
+            $ f $ This $ SA.indexSmallArray l n
+    SA.unsafeFreezeSmallArray sa
+  {-# INLINE [1] calignWith #-}
+
+instance CAlign SA.SmallArray where
+  cnil = SA.smallArrayFromListN 0 []
+  {-# INLINE [1] cnil #-}
+
+instance CSemialign A.Array where
+  calignWith f l r = runST $ do
+    let !lenL = length l
+        !lenR = length r
+        (isLftShort, thresh, len)
+          | lenL < lenR = (True, lenL, lenR)
+          | otherwise = (False, lenR, lenL)
+    sa <- A.newArray len (error "Uninitialised element")
+    forM_ [0..len-1] $ \n ->
+      if  | n == len -> pure ()
+          | n < thresh ->
+            A.writeArray sa n
+            $ f $ These
+              (A.indexArray l n)
+              (A.indexArray r n)
+          | isLftShort ->
+            A.writeArray sa n
+            $ f $ That $ A.indexArray r n
+          | otherwise ->
+            A.writeArray sa n
+            $ f $ This $ A.indexArray l n
+    A.unsafeFreezeArray sa
+  {-# INLINE [1] calignWith #-}
+
+instance CAlign A.Array where
+  cnil = A.fromListN 0 []
+  {-# INLINE [1] cnil #-}
+
+instance CSemialign PA.PrimArray where
+  calignWith f l r = runST $ do
+    let !lenL = PA.sizeofPrimArray l
+        !lenR = PA.sizeofPrimArray r
+        (isLftShort, thresh, len)
+          | lenL < lenR = (True, lenL, lenR)
+          | otherwise = (False, lenR, lenL)
+    sa <- PA.newPrimArray len
+    forM_ [0..len-1] $ \n ->
+      if  | n == len -> pure ()
+          | n < thresh ->
+            PA.writePrimArray sa n
+            $ f $ These
+              (PA.indexPrimArray l n)
+              (PA.indexPrimArray r n)
+          | isLftShort ->
+            PA.writePrimArray sa n
+            $ f $ That $ PA.indexPrimArray r n
+          | otherwise ->
+            PA.writePrimArray sa n
+            $ f $ This $ PA.indexPrimArray l n
+    PA.unsafeFreezePrimArray sa
+  {-# INLINE [1] calignWith #-}
+
+instance CAlign PA.PrimArray where
+  cnil = PA.primArrayFromListN 0 []
   {-# INLINE [1] cnil #-}

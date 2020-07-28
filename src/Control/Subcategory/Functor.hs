@@ -41,7 +41,9 @@ import Data.MonoTraversable (WrappedMono)
 
 import qualified Data.IntSet                     as IS
 import           Data.Ord                        (Down (..))
+import qualified Data.Primitive.Array            as A
 import qualified Data.Primitive.PrimArray        as PA
+import qualified Data.Primitive.SmallArray       as SA
 import           Data.Proxy                      (Proxy)
 import qualified Data.Semigroup                  as Sem
 import qualified Data.Sequence                   as Seq
@@ -350,3 +352,20 @@ instance Constrained P.Vector where
 instance CFunctor P.Vector where
   cmap = P.map
   {-# INLINE [1] cmap #-}
+
+instance Constrained PA.PrimArray where
+  type Dom' PA.PrimArray a = P.Prim a
+
+instance CFunctor PA.PrimArray where
+  cmap = PA.mapPrimArray
+  {-# INLINE [1] cmap #-}
+
+deriving via WrapFunctor SA.SmallArray
+  instance Constrained SA.SmallArray
+deriving via WrapFunctor SA.SmallArray
+  instance CFunctor SA.SmallArray
+
+deriving via WrapFunctor A.Array
+  instance Constrained A.Array
+deriving via WrapFunctor A.Array
+  instance CFunctor A.Array

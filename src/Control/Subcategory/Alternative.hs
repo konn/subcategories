@@ -8,6 +8,7 @@ import Control.Subcategory.Functor
 import Control.Subcategory.Pointed
 
 import qualified Control.Applicative             as App
+import           Control.Monad.ST.Strict         (runST)
 import           Data.Coerce                     (coerce)
 import qualified Data.Functor.Compose            as SOP
 import qualified Data.Functor.Product            as SOP
@@ -18,14 +19,36 @@ import qualified Data.IntMap                     as IM
 import           Data.List.NonEmpty              (NonEmpty)
 import qualified Data.Map                        as Map
 import           Data.MonoTraversable            (GrowingAppend, MonoFunctor)
+import qualified Data.Primitive.Array            as A
+import qualified Data.Primitive.PrimArray        as PA
+import qualified Data.Primitive.SmallArray       as SA
 import qualified Data.Semigroup                  as Sem
 import qualified Data.Sequence                   as Seq
 import qualified Data.Set                        as Set
+import qualified Data.Vector                     as V
+import qualified Data.Vector.Primitive           as P
+import qualified Data.Vector.Storable            as S
+import qualified Data.Vector.Unboxed             as U
 import           Text.ParserCombinators.ReadP    (ReadP)
 import           Text.ParserCombinators.ReadPrec (ReadPrec)
 
 instance CChoice []
 instance CChoice Maybe
+instance CChoice V.Vector
+instance CChoice U.Vector where
+  (<!>) = (<>)
+  {-# INLINE [1] (<!>) #-}
+instance CChoice S.Vector where
+  (<!>) = (<>)
+  {-# INLINE [1] (<!>) #-}
+instance CChoice P.Vector where
+  (<!>) = (<>)
+  {-# INLINE [1] (<!>) #-}
+instance CChoice PA.PrimArray where
+  (<!>) = (<>)
+  {-# INLINE [1] (<!>) #-}
+instance CChoice SA.SmallArray
+instance CChoice A.Array
 instance CChoice Seq.Seq
 instance CChoice Sem.Option
 instance CChoice NonEmpty where
@@ -103,6 +126,21 @@ instance CAlternative Maybe
 instance CAlternative Seq.Seq
 instance CAlternative Sem.Option
 instance CAlternative ReadP
+instance CAlternative V.Vector
+instance CAlternative U.Vector where
+  cempty = U.empty
+  {-# INLINE [1] cempty #-}
+instance CAlternative S.Vector where
+  cempty = S.empty
+  {-# INLINE [1] cempty #-}
+instance CAlternative P.Vector where
+  cempty = P.empty
+  {-# INLINE [1] cempty #-}
+instance CAlternative PA.PrimArray where
+  cempty = PA.primArrayFromListN 0 []
+  {-# INLINE [1] cempty #-}
+instance CAlternative SA.SmallArray
+instance CAlternative A.Array
 instance CAlternative ReadPrec
 
 newtype CAlt f a = CAlt { runAlt :: f a }
