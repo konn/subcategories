@@ -2,12 +2,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, MultiWayIf, StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators                                              #-}
 module Control.Subcategory.Semialign
-  ( CSemialign(..), CAlign(..)
+  ( CSemialign(..), CAlign(..),
+    csalign, cpadZip, cpadZipWith
   ) where
 import           Control.Applicative         (ZipList)
 import           Control.Monad               (forM_)
 import           Control.Monad.ST.Strict     (runST)
 import           Control.Subcategory.Functor
+import           Data.Bifunctor              (Bifunctor (bimap))
 import           Data.Coerce
 import           Data.Functor.Compose        (Compose (..))
 import           Data.Functor.Identity       (Identity)
@@ -25,7 +27,7 @@ import           Data.Proxy                  (Proxy)
 import           Data.Semialign
 import           Data.Semigroup              (Option (..))
 import           Data.Sequence               (Seq)
-import           Data.These                  (These (..))
+import           Data.These                  (These (..), fromThese, mergeThese)
 import           Data.Tree                   (Tree)
 import qualified Data.Vector                 as V
 import qualified Data.Vector.Primitive       as P
@@ -254,3 +256,23 @@ instance CSemialign PA.PrimArray where
 instance CAlign PA.PrimArray where
   cnil = PA.primArrayFromListN 0 []
   {-# INLINE [1] cnil #-}
+
+csalign :: (CSemialign f, Dom f a, Semigroup a)
+  => f a -> f a -> f a
+{-# INLINE [1] csalign #-}
+csalign = calignWith $ mergeThese (<>)
+
+cpadZip
+  :: (CSemialign f, Dom f a, Dom f b, Dom f (Maybe a, Maybe b))
+  => f a -> f b -> f (Maybe a, Maybe b)
+{-# INLINE [1] cpadZip #-}
+cpadZip = calignWith (fromThese Nothing Nothing . bimap Just Just)
+
+cpadZipWith
+  :: (CSemialign f, Dom f a, Dom f b, Dom f c)
+  => (Maybe a -> Maybe b -> c)
+  -> f a -> f b -> f c
+{-# INLINE [1] cpadZipWith #-}
+cpadZipWith f = calignWith $
+  uncurry f . fromThese Nothing Nothing . bimap Just Just
+
