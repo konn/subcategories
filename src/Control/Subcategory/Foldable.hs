@@ -5,6 +5,7 @@
 module Control.Subcategory.Foldable
   ( CFoldable(..), CTraversable(..),
     CFreeMonoid(..),
+    cfolded, cfolding,
     cctraverseFreeMonoid,
     cctraverseZipFreeMonoid
   ) where
@@ -19,6 +20,8 @@ import           Data.Coerce
 import           Data.Complex                         (Complex)
 import           Data.Foldable
 import           Data.Functor.Const                   (Const)
+import           Data.Functor.Contravariant           (Contravariant, contramap,
+                                                       phantom)
 import           Data.Functor.Identity                (Identity)
 import qualified Data.Functor.Product                 as SOP
 import qualified Data.Functor.Sum                     as SOP
@@ -958,3 +961,28 @@ cctraverseZipFreeMonoid
   => (a -> f b) -> t a -> f (t b)
 cctraverseZipFreeMonoid f =
   runCZippy . cfoldMap (CZippy . cmap cpure . f)
+
+-- | Fold-optic for 'CFoldable' instances.
+--   In the terminology of lens, cfolded is a constrained
+--   variant of @folded@ optic.
+--
+--  @
+--    cfolded :: (CFoldable t, Dom t a) => Fold (t a) a
+--  @
+cfolded
+  :: (CFoldable t, Dom t a)
+  => forall f. (Contravariant f, Applicative f) => (a -> f a) -> t a -> f (t a)
+{-# INLINE cfolded #-}
+cfolded = (contramap (const ()) .) . ctraverse_
+
+-- | Lifts 'CFoldable' along given function.
+--
+--  @
+--    cfolding :: (CFoldable t, Dom t a) => (s -> t a) -> Fold s a
+--  @
+cfolding
+  :: (CFoldable t, Dom t a, Contravariant f, Applicative f)
+  => (s -> t a)
+  -> (a -> f a) -> s -> f s
+{-# INLINE cfolding #-}
+cfolding = \sfa agb -> phantom . ctraverse_ agb . sfa
