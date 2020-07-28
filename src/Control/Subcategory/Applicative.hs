@@ -30,10 +30,10 @@ import           GHC.Conc                        (STM)
 import           Text.ParserCombinators.ReadP    (ReadP)
 import           Text.ParserCombinators.ReadPrec (ReadPrec)
 
-defaultLeftApply :: (Cat f (b1, b2), Cat f b1, Cat f b2, CApplicative f)
+defaultLeftApply :: (Dom f (b1, b2), Dom f b1, Dom f b2, CApplicative f)
                  => f b1 -> f b2 -> f b1
 defaultLeftApply a b = uncurry const <$:> pair a b
-defaultRightApply :: (Cat f (b1, b2), Cat f b2, Cat f b1, CApplicative f)
+defaultRightApply :: (Dom f (b1, b2), Dom f b2, Dom f b1, CApplicative f)
                   => f b1 -> f b2 -> f b2
 defaultRightApply a b = uncurry (const id) <$:> pair a b
 
@@ -72,8 +72,8 @@ instance (CApplicative f, CApplicative g)
   SOP.Pair f g .> SOP.Pair a b = SOP.Pair (f .> a) (g .> b)
   {-# INLINE (.>) #-}
 
-class Cat f (g a -> g b) => CatOver f g a b
-instance Cat f (g a -> g b) => CatOver f g a b
+class Dom f (g a -> g b) => DomOver f g a b
+instance Dom f (g a -> g b) => DomOver f g a b
 
 instance Applicative f => CApplicative (WrapFunctor f)
 instance Semigroup w => CApplicative ((,) w) where
@@ -140,7 +140,7 @@ instance CApplicative HS.HashSet where
   {-# INLINE (.>) #-}
 
 instance Constrained f => Constrained (CApp f) where
-  type Cat' (CApp f) a = Cat f a
+  type Dom' (CApp f) a = Dom f a
 
 newtype CApp f a = CApp { runCApp :: f a }
   deriving (Read, Show, Eq, Ord)
@@ -152,11 +152,11 @@ deriving newtype instance (CAlternative f) => CAlternative (CApp f)
 deriving newtype instance (CApplicative f) => CApplicative (CApp f)
 deriving newtype instance (CPointed f) => CPointed (CApp f)
 
-instance (Cat f a, CApplicative f, Semigroup a, Cat f (a, a))
+instance (Dom f a, CApplicative f, Semigroup a, Dom f (a, a))
        => Semigroup (CApp f a) where
   CApp a <> CApp b = CApp $ uncurry (<>) <$:> pair a b
 
-instance (Cat f a, CPointed f, CApplicative f, Monoid a, Cat f (a, a))
+instance (Dom f a, CPointed f, CApplicative f, Monoid a, Dom f (a, a))
        => Monoid (CApp f a) where
   CApp a `mappend` CApp b = CApp $ uncurry mappend <$:> pair a b
   mempty = CApp $ cpure mempty

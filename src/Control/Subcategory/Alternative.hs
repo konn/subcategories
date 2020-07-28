@@ -114,9 +114,9 @@ deriving newtype instance CApplicative f => CApplicative (CAlt f)
 deriving newtype instance CPointed f => CPointed (CAlt f)
 
 
-instance (Cat f a, CChoice f) => Sem.Semigroup (CAlt f a) where
+instance (Dom f a, CChoice f) => Sem.Semigroup (CAlt f a) where
   (<>) = coerce @(f a -> f a -> f a) (<!>)
 
-instance (Cat f a, CAlternative f) => Monoid (CAlt f a) where
+instance (Dom f a, CAlternative f) => Monoid (CAlt f a) where
   mempty = coerce @(f a) cempty
   mappend = coerce @(f a -> f a -> f a) (<!>)

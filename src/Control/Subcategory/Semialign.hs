@@ -29,10 +29,10 @@ import           GHC.Generics                ((:*:) (..), (:.:) (..))
 class CFunctor f => CSemialign f where
   {-# MINIMAL calignWith #-}
   calignWith
-    :: (Cat f a, Cat f b, Cat f c)
+    :: (Dom f a, Dom f b, Dom f c)
     => (These a b -> c) -> f a -> f b -> f c
   calign
-    :: (Cat f a, Cat f b, Cat f (These a b))
+    :: (Dom f a, Dom f b, Dom f (These a b))
     => f a -> f b -> f (These a b)
   {-# INLINE [1] calign #-}
   calign = calignWith id
@@ -55,7 +55,7 @@ instance CSemialign (WrapMono IS.IntSet) where
   {-# INLINE [1] calignWith #-}
 
 class CSemialign f => CAlign f where
-  cnil :: Cat f a => f a
+  cnil :: Dom f a => f a
 
 instance Align f => CAlign (WrapFunctor f) where
   cnil = WrapFunctor nil

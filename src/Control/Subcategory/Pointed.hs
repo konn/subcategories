@@ -27,7 +27,7 @@ import           Text.ParserCombinators.ReadP    (ReadP)
 import           Text.ParserCombinators.ReadPrec (ReadPrec)
 
 class Constrained f => CPointed f where
-  cpure :: Cat f a => a -> f a
+  cpure :: Dom f a => a -> f a
   default cpure :: App.Applicative f => a -> f a
   cpure = pure
 

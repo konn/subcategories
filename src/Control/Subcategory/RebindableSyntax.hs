@@ -18,16 +18,16 @@ ifThenElse True t _  = t
 ifThenElse False _ f = f
 {-# INLINE ifThenElse #-}
 
-(>>=) :: (Cat m a, Cat m b, CBind m)
+(>>=) :: (Dom m a, Dom m b, CBind m)
       => m a -> (a -> m b) -> m b
 (>>=) = (>>-)
 {-# INLINE (>>=) #-}
 
-(>>) :: (Cat m a, Cat m b, CApplicative m)
+(>>) :: (Dom m a, Dom m b, CApplicative m)
       => m a -> m b -> m b
 (>>) = (.>)
 {-# INLINE (>>) #-}
 
-return :: (Cat m a, CPointed m) => a -> m a
+return :: (Dom m a, CPointed m) => a -> m a
 return = cpure
 {-# INLINE return #-}

@@ -30,10 +30,10 @@ import qualified Prelude                       as P
 
 class CSemialign f => CZip f where
   czipWith
-    :: (Cat f a, Cat f b, Cat f c)
+    :: (Dom f a, Dom f b, Dom f c)
     => (a -> b -> c) -> f a -> f b -> f c
   czip
-    :: (Cat f a, Cat f b, Cat f (a, b))
+    :: (Dom f a, Dom f b, Dom f (a, b))
     => f a -> f b -> f (a, b)
   {-# INLINE [1] czip #-}
   czip = czipWith (,)
@@ -131,7 +131,7 @@ instance (CZip f, CZip g) => CZip (f :.: g) where
   #-}
 
 class CZip f => CRepeat f where
-  crepeat :: Cat f a => a -> f a
+  crepeat :: Dom f a => a -> f a
 
 newtype CZippy f a = CZippy { runCZippy :: f a }
   deriving (Show, Read)
@@ -140,7 +140,7 @@ newtype CZippy f a = CZippy { runCZippy :: f a }
 
 instance CFunctor f => CFunctor (CZippy f) where
   cmap = coerce $ cmap @f @a @b
-    :: forall a b. (Cat f a, Cat f b) => (a -> b) -> CZippy f a -> CZippy f b
+    :: forall a b. (Dom f a, Dom f b) => (a -> b) -> CZippy f a -> CZippy f b
   {-# INLINE [1] cmap #-}
 
 instance CSemialign f => CSemialign (CZippy f) where
@@ -155,10 +155,10 @@ instance CRepeat f => CRepeat (CZippy f) where
   crepeat = CZippy . crepeat
   {-# INLINE [1] crepeat #-}
 
-instance (CZip f, Cat f a, Semigroup a) => Semigroup (CZippy f a) where
+instance (CZip f, Dom f a, Semigroup a) => Semigroup (CZippy f a) where
   (<>) = coerce $ czipWith @f ((<>) @a)
   {-# INLINE [1] (<>) #-}
 
-instance (CRepeat f, Cat f a, Monoid a) => Monoid (CZippy f a) where
+instance (CRepeat f, Dom f a, Monoid a) => Monoid (CZippy f a) where
   mempty = coerce $ crepeat @f (mempty @a)
   {-# INLINE [1] mempty #-}

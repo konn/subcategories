@@ -26,10 +26,10 @@ import           Text.ParserCombinators.ReadP    (ReadP)
 import           Text.ParserCombinators.ReadPrec (ReadPrec)
 
 class CFunctor m => CBind m where
-  (>>-) :: (Cat m a, Cat m b) => m a -> (a -> m b) -> m b
-  default (>>-) :: (Cat m a, Cat m b, Cat m (m b)) => m a -> (a -> m b) -> m b
+  (>>-) :: (Dom m a, Dom m b) => m a -> (a -> m b) -> m b
+  default (>>-) :: (Dom m a, Dom m b, Dom m (m b)) => m a -> (a -> m b) -> m b
   m >>- f = cjoin (cmap f m)
-  cjoin :: (Cat m (m a), Cat m a) => m (m a) -> m a
+  cjoin :: (Dom m (m a), Dom m a) => m (m a) -> m a
   cjoin = (>>- id)
 
 instance (Monad m) => CBind (WrapFunctor m) where
@@ -128,7 +128,7 @@ instance Semigroup w => CBind ((,) w) where
 infixl 1 >>-
 infixr 1 -<<
 
-(-<<) :: (Cat m b, Cat m a, CBind m) => (a -> m b) -> m a -> m b
+(-<<) :: (Dom m b, Dom m a, CBind m) => (a -> m b) -> m a -> m b
 (-<<) = flip (>>-)
 {-# INLINE (-<<) #-}
 
@@ -142,6 +142,6 @@ instance (CBind m, CBind n) => CBind (SOP.Product m n) where
 class    (CBind f, CPointed f) => CMonad f
 instance (CBind f, CPointed f) => CMonad f
 
-creturn :: (Cat m a, CMonad m) => a -> m a
+creturn :: (Dom m a, CMonad m) => a -> m a
 creturn = cpure
 {-# INLINE creturn #-}

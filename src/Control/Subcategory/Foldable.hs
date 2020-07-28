@@ -60,43 +60,43 @@ import           Language.Haskell.TH                  hiding (Type)
 
 class Constrained f => CFoldable f where
   {-# MINIMAL cfoldMap | cfoldr #-}
-  cfoldMap :: (Cat f a, Monoid w) => (a -> w) -> f a -> w
+  cfoldMap :: (Dom f a, Monoid w) => (a -> w) -> f a -> w
   {-# INLINE [1] cfoldMap #-}
   cfoldMap f = cfoldr (mappend . f) mempty
 
-  cfoldMap' :: (Cat f a, Monoid m) => (a -> m) -> f a -> m
+  cfoldMap' :: (Dom f a, Monoid m) => (a -> m) -> f a -> m
   {-# INLINE [1] cfoldMap' #-}
   cfoldMap' f = cfoldl' (\ acc a -> acc <> f a) mempty
 
-  cfold :: (Cat f w, Monoid w) => f w -> w
+  cfold :: (Dom f w, Monoid w) => f w -> w
   cfold = cfoldMap id
 
   {-# INLINE [1] cfold #-}
-  cfoldr :: (Cat f a) => (a -> b -> b) -> b -> f a -> b
+  cfoldr :: (Dom f a) => (a -> b -> b) -> b -> f a -> b
   {-# INLINE [1] cfoldr #-}
   cfoldr f z t = appEndo (cfoldMap (Endo #. f) t) z
 
   cfoldl
-      :: (Cat f a)
+      :: (Dom f a)
       => (b -> a -> b) -> b -> f a -> b
   {-# INLINE [1] cfoldl #-}
   cfoldl f z t = appEndo (getDual (cfoldMap (Dual . Endo . flip f) t)) z
 
-  cfoldr' :: (Cat f a) => (a -> b -> b) -> b -> f a -> b
+  cfoldr' :: (Dom f a) => (a -> b -> b) -> b -> f a -> b
   {-# INLINE [1] cfoldr' #-}
   cfoldr' f z0 xs = cfoldl f' id xs z0
       where f' k x z = k $! f x z
 
-  cfoldl' :: Cat f a => (b -> a -> b) -> b -> f a -> b
+  cfoldl' :: Dom f a => (b -> a -> b) -> b -> f a -> b
   {-# INLINE [1] cfoldl' #-}
   cfoldl' f z0 xs = cfoldr f' id xs z0
     where f' x k z = k $! f z x
 
-  ctoList :: Cat f a => f a -> [a]
+  ctoList :: Dom f a => f a -> [a]
   {-# INLINE [1] ctoList #-}
   ctoList = cfoldr (:) []
 
-  cfoldr1 :: Cat f a => (a -> a -> a) -> f a -> a
+  cfoldr1 :: Dom f a => (a -> a -> a) -> f a -> a
   {-# INLINE [1] cfoldr1 #-}
   cfoldr1 f xs = fromMaybe (errorWithoutStackTrace "cfoldr1: empty structure")
                     (cfoldr mf Nothing xs)
@@ -106,7 +106,7 @@ class Constrained f => CFoldable f where
             Nothing -> x
             Just y  -> f x y
 
-  cfoldl1 :: Cat f a => (a -> a -> a) -> f a -> a
+  cfoldl1 :: Dom f a => (a -> a -> a) -> f a -> a
   {-# INLINE [1] cfoldl1 #-}
   cfoldl1 f xs = fromMaybe (errorWithoutStackTrace "cfoldl1: empty structure")
                   (cfoldl mf Nothing xs)
@@ -116,7 +116,7 @@ class Constrained f => CFoldable f where
           Nothing -> y
           Just x  -> f x y
 
-  cindex :: Cat f a => f a -> Int -> a
+  cindex :: Dom f a => f a -> Int -> a
   cindex xs n = case cfoldl' go (Left' 0) xs of
     Right' x -> x
     Left'{} -> errorWithoutStackTrace $ "cindex: index out of bound " ++ show n
@@ -126,49 +126,49 @@ class Constrained f => CFoldable f where
         | otherwise = Left' (i + 1)
       go r@Right'{} _ = r
 
-  cnull :: Cat f a => f a -> Bool
+  cnull :: Dom f a => f a -> Bool
   cnull = cfoldr (const $ const False) True
 
-  clength :: Cat f a => f a -> Int
+  clength :: Dom f a => f a -> Int
   {-# INLINE [1] clength #-}
   clength = cfoldl' (\c _ -> c + 1) 0
 
-  cany :: Cat f a => (a -> Bool) -> f a -> Bool
+  cany :: Dom f a => (a -> Bool) -> f a -> Bool
   {-# INLINE [1] cany #-}
   cany p = cfoldl' (\b -> (||) b . p) False
 
-  call :: Cat f a => (a -> Bool) -> f a -> Bool
+  call :: Dom f a => (a -> Bool) -> f a -> Bool
   {-# INLINE [1] call #-}
   call p = cfoldl' (\b -> (&&) b . p) True
 
-  celem :: (Eq a, Cat f a) => a -> f a -> Bool
+  celem :: (Eq a, Dom f a) => a -> f a -> Bool
   {-# INLINE [1] celem #-}
   celem = cany . (==)
 
-  cminimum :: (Ord a, Cat f a) => f a -> a
+  cminimum :: (Ord a, Dom f a) => f a -> a
   {-# INLINE [1] cminimum #-}
   cminimum =
     getMin
     . fromMaybe (errorWithoutStackTrace "minimum: empty structure")
     . cfoldMap (Just . Min)
 
-  cmaximum :: (Ord a, Cat f a) => f a -> a
+  cmaximum :: (Ord a, Dom f a) => f a -> a
   {-# INLINE [1] cmaximum #-}
   cmaximum =
     getMax
     . fromMaybe (errorWithoutStackTrace "cmaximum: empty structure")
     . cfoldMap (Just . Max)
 
-  csum :: (Num a, Cat f a) => f a -> a
+  csum :: (Num a, Dom f a) => f a -> a
   {-# INLINE [1] csum #-}
   csum = getSum #. cfoldMap Sum
 
-  cproduct :: (Num a, Cat f a) => f a -> a
+  cproduct :: (Num a, Dom f a) => f a -> a
   {-# INLINE [1] cproduct #-}
   cproduct = getProduct #. cfoldMap Product
 
   cctraverse_
-    :: (CApplicative g, CPointed g, Cat g (), Cat f a, Cat g b)
+    :: (CApplicative g, CPointed g, Dom g (), Dom f a, Dom g b)
     => (a -> g b)
     -> f a -> g ()
   {-# INLINE [1] cctraverse_ #-}
@@ -178,7 +178,7 @@ class Constrained f => CFoldable f where
       c x k = f x .> k
 
   ctraverse_
-    :: (Applicative g, CPointed g, Cat g (), Cat f a, Cat g b)
+    :: (Applicative g, CPointed g, Dom g (), Dom f a, Dom g b)
     => (a -> g b)
     -> f a -> g ()
   {-# INLINE [1] ctraverse_ #-}
@@ -254,7 +254,7 @@ class (CFunctor f, CFoldable f) => CTraversable f where
   --   This is rather annoying, so we require the strongest possible
   --   constraint to @g@ here.
   ctraverse
-    :: (Cat f a, Cat f b, Applicative g)
+    :: (Dom f a, Dom f b, Applicative g)
     => (a -> g b) -> f a -> g (f b)
 
 deriving via WrapFunctor []
@@ -856,8 +856,8 @@ class (CFunctor f, forall x. Monoid (f x), CPointed f, CFoldable f)
 
 cctraverseFreeMonoid
   ::  ( CFreeMonoid t, CApplicative f, CPointed f,
-        Cat t a, Cat f (t b), Cat f b, Cat t b,
-        Cat f (t b, t b)
+        Dom t a, Dom f (t b), Dom f b, Dom t b,
+        Dom f (t b, t b)
       )
   => (a -> f b) -> t a -> f (t b)
 cctraverseFreeMonoid f =
@@ -865,8 +865,8 @@ cctraverseFreeMonoid f =
 
 cctraverseZipFreeMonoid
   :: ( CFreeMonoid t, CRepeat f,
-        Cat t a, Cat f (t b), Cat f b, Cat t b,
-        Cat f (t b, t b)
+        Dom t a, Dom f (t b), Dom f b, Dom t b,
+        Dom f (t b, t b)
       )
   => (a -> f b) -> t a -> f (t b)
 cctraverseZipFreeMonoid f =
