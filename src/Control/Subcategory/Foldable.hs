@@ -182,11 +182,11 @@ class Constrained f => CFoldable f where
       c x k = f x .> k
 
   ctraverse_
-    :: (Applicative g, CPointed g, Dom g (), Dom f a, Dom g b)
+    :: (Applicative g, Dom f a)
     => (a -> g b)
     -> f a -> g ()
   {-# INLINE [1] ctraverse_ #-}
-  ctraverse_ f = cfoldr c (cpure ())
+  ctraverse_ f = cfoldr c (pure ())
     where
       {-# INLINE c #-}
       c x k = f x *> k
