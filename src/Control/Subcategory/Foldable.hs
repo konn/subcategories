@@ -4,7 +4,7 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Control.Subcategory.Foldable
   ( CFoldable(..), CTraversable(..),
-    CFreeMonoid(),
+    CFreeMonoid(..),
     cctraverseFreeMonoid,
     cctraverseZipFreeMonoid
   ) where
@@ -53,6 +53,7 @@ import qualified Data.Vector.Primitive                as P
 import qualified Data.Vector.Storable                 as S
 import qualified Data.Vector.Unboxed                  as U
 import           Foreign.Ptr                          (Ptr)
+import qualified GHC.Exts                             as GHC
 import           GHC.Generics
 import           Language.Haskell.TH                  hiding (Type)
 
@@ -885,13 +886,60 @@ instance CTraversable P.Vector where
 --
 --   Hence, @'Set's@ cannot be a free monoid functor;
 class (CFunctor f, forall x. Dom f x => Monoid (f x), CPointed f, CFoldable f)
-  => CFreeMonoid f
+  => CFreeMonoid f where
+  cfromList :: Dom f a => [a] -> f a
+  cfromList = foldr ((<>) . cpure) mempty
+  {-# INLINE [1] cfromList #-}
 
-instance CFreeMonoid []
-instance CFreeMonoid V.Vector
-instance CFreeMonoid U.Vector
-instance CFreeMonoid S.Vector
-instance CFreeMonoid P.Vector
+  cfromListN :: Dom f a => Int -> [a] -> f a
+  cfromListN = (foldr ((<>) . cpure) mempty .) . take
+  {-# INLINE [1] cfromListN #-}
+
+instance CFreeMonoid [] where
+  cfromList = id
+  {-# INLINE [1] cfromList #-}
+  cfromListN = take
+  {-# INLINE [1] cfromListN #-}
+instance CFreeMonoid V.Vector where
+  cfromList = V.fromList
+  {-# INLINE [1] cfromList #-}
+  cfromListN = V.fromListN
+  {-# INLINE [1] cfromListN #-}
+instance CFreeMonoid U.Vector where
+  cfromList = U.fromList
+  {-# INLINE [1] cfromList #-}
+  cfromListN = U.fromListN
+  {-# INLINE [1] cfromListN #-}
+instance CFreeMonoid S.Vector where
+  cfromList = S.fromList
+  {-# INLINE [1] cfromList #-}
+  cfromListN = S.fromListN
+  {-# INLINE [1] cfromListN #-}
+instance CFreeMonoid P.Vector where
+  cfromList = P.fromList
+  {-# INLINE [1] cfromList #-}
+  cfromListN = P.fromListN
+  {-# INLINE [1] cfromListN #-}
+instance CFreeMonoid PA.PrimArray where
+  cfromList = PA.primArrayFromList
+  {-# INLINE [1] cfromList #-}
+  cfromListN = PA.primArrayFromListN
+  {-# INLINE [1] cfromListN #-}
+instance CFreeMonoid SA.SmallArray where
+  cfromList = SA.smallArrayFromList
+  {-# INLINE [1] cfromList #-}
+  cfromListN = SA.smallArrayFromListN
+  {-# INLINE [1] cfromListN #-}
+instance CFreeMonoid A.Array where
+  cfromList = A.fromList
+  {-# INLINE [1] cfromList #-}
+  cfromListN = A.fromListN
+  {-# INLINE [1] cfromListN #-}
+instance CFreeMonoid Seq.Seq where
+  cfromList = Seq.fromList
+  {-# INLINE [1] cfromList #-}
+  cfromListN = GHC.fromListN
+  {-# INLINE [1] cfromListN #-}
 
 cctraverseFreeMonoid
   ::  ( CFreeMonoid t, CApplicative f, CPointed f,
