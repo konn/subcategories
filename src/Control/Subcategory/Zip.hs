@@ -14,6 +14,7 @@ import           Data.Functor.Identity
 import qualified Data.Functor.Product          as SOP
 import           Data.Hashable                 (Hashable)
 import qualified Data.HashMap.Strict           as HM
+import qualified Data.IntMap.Strict            as IM
 import qualified Data.List.NonEmpty            as NE
 import qualified Data.Map.Strict               as M
 import           Data.Proxy
@@ -52,12 +53,32 @@ deriving via WrapFunctor ZipList instance CZip ZipList
 deriving via WrapFunctor Identity instance CZip Identity
 deriving via WrapFunctor NE.NonEmpty instance CZip NE.NonEmpty
 deriving via WrapFunctor Tree instance CZip Tree
+deriving via WrapFunctor ((->) e) instance CZip ((->) e)
+
+#if MIN_VERSION_semialign(1,1,0)
 deriving via WrapFunctor Seq.Seq instance CZip Seq.Seq
 deriving via WrapFunctor (M.Map k) instance Ord k => CZip (M.Map k)
 deriving via WrapFunctor (HM.HashMap k)
   instance (Eq k, Hashable k)
   => CZip (HM.HashMap k)
-deriving via WrapFunctor ((->) e) instance CZip ((->) e)
+deriving via WrapFunctor IM.IntMap instance CZip IM.IntMap
+#else
+instance CZip Seq.Seq where
+  czipWith = Seq.zipWith
+  {-# INLINE [1] czipWith #-}
+  czip = Seq.zip
+  {-# INLINE [1] czip #-}
+instance Ord k => CZip (M.Map k) where
+  czipWith = M.intersectionWith
+  {-# INLINE [1] czipWith #-}
+instance (Eq k, Hashable k) => CZip (HM.HashMap k) where
+  czipWith = HM.intersectionWith
+  {-# INLINE [1] czipWith #-}
+instance CZip IM.IntMap where
+  czipWith = IM.intersectionWith
+  {-# INLINE [1] czipWith #-}
+#endif
+
 
 instance CZip V.Vector where
   czip = V.zip
@@ -140,7 +161,7 @@ newtype CZippy f a = CZippy { runCZippy :: f a }
   deriving newtype (Functor, Zip, Semialign, Eq, Ord)
   deriving newtype (Constrained)
 #if MIN_VERSION_semialign(1,1,0)
-  deriving newtype Repeat
+  deriving newtype (Repeat)
 #endif
 
 instance CFunctor f => CFunctor (CZippy f) where
@@ -197,7 +218,7 @@ instance CRepeat NE.NonEmpty where
   crepeat = NE.repeat
   {-# INLINE [1] crepeat #-}
 instance CRepeat Tree where
-  crepeat x = n where n = Node x (repeat n)
+  crepeat x = n where n = Node x (P.repeat n)
   {-# INLINE [1] crepeat #-}
 instance CRepeat Proxy where
   crepeat = const Proxy
