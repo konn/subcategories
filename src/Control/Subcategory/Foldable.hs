@@ -851,7 +851,7 @@ instance CTraversable P.Vector where
 --    @
 --
 --   Hence, @'Set's@ cannot be a free monoid functor;
-class (CFunctor f, forall x. Monoid (f x), CPointed f, CFoldable f)
+class (CFunctor f, forall x. Dom f x => Monoid (f x), CPointed f, CFoldable f)
   => CFreeMonoid f
 
 cctraverseFreeMonoid
