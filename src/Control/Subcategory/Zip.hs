@@ -1,25 +1,25 @@
-{-# LANGUAGE DerivingVia, StandaloneDeriving, TypeOperators #-}
+{-# LANGUAGE CPP, DerivingVia, StandaloneDeriving, TypeOperators #-}
 module Control.Subcategory.Zip
   ( CZip(..),
     CZippy(..),
     CRepeat(..),
     module Control.Subcategory.Semialign
   )where
-import           Control.Applicative           (ZipList (ZipList))
+import           Control.Applicative           (ZipList (..))
 import           Control.Subcategory.Functor
 import           Control.Subcategory.Semialign
 import           Data.Coerce                   (coerce)
-import           Data.Data                     (Proxy (Proxy))
 import           Data.Functor.Compose          (Compose (..))
-import           Data.Functor.Identity         (Identity)
+import           Data.Functor.Identity
 import qualified Data.Functor.Product          as SOP
 import           Data.Hashable                 (Hashable)
 import qualified Data.HashMap.Strict           as HM
 import qualified Data.List.NonEmpty            as NE
 import qualified Data.Map.Strict               as M
+import           Data.Proxy
 import           Data.Semigroup                (Option (..))
 import qualified Data.Sequence                 as Seq
-import           Data.Tree                     (Tree)
+import           Data.Tree
 import qualified Data.Vector                   as V
 import qualified Data.Vector.Primitive         as Prim
 import qualified Data.Vector.Storable          as S
@@ -137,8 +137,11 @@ class CZip f => CRepeat f where
 
 newtype CZippy f a = CZippy { runCZippy :: f a }
   deriving (Show, Read)
-  deriving newtype (Functor, Zip, Semialign, Repeat, Eq, Ord)
+  deriving newtype (Functor, Zip, Semialign, Eq, Ord)
   deriving newtype (Constrained)
+#if MIN_VERSION_semialign(1,1,0)
+  deriving newtype Repeat
+#endif
 
 instance CFunctor f => CFunctor (CZippy f) where
   cmap = coerce $ cmap @f @a @b
@@ -165,11 +168,11 @@ instance (CRepeat f, Dom f a, Monoid a) => Monoid (CZippy f a) where
   mempty = coerce $ crepeat @f (mempty @a)
   {-# INLINE [1] mempty #-}
 
+#if MIN_VERSION_semialign(1,1,0)
 instance Repeat f => CRepeat (WrapFunctor f) where
   crepeat = coerce $ repeat @f @a
     :: forall a. a -> WrapFunctor f a
   {-# INLINE [1] crepeat #-}
-
 deriving via WrapFunctor [] instance CRepeat []
 deriving via WrapFunctor Maybe instance CRepeat Maybe
 deriving newtype instance CRepeat Option
@@ -178,3 +181,28 @@ deriving via WrapFunctor Identity instance CRepeat Identity
 deriving via WrapFunctor NE.NonEmpty instance CRepeat NE.NonEmpty
 deriving via WrapFunctor Tree instance CRepeat Tree
 deriving via WrapFunctor ((->) e) instance CRepeat ((->) e)
+#else
+instance CRepeat [] where
+  crepeat = P.repeat
+  {-# INLINE [1] crepeat #-}
+instance CRepeat Maybe where
+  crepeat = Just
+  {-# INLINE [1] crepeat #-}
+deriving newtype instance CRepeat Option
+deriving newtype instance CRepeat ZipList
+instance CRepeat Identity where
+  crepeat = Identity
+  {-# INLINE [1] crepeat #-}
+instance CRepeat NE.NonEmpty where
+  crepeat = NE.repeat
+  {-# INLINE [1] crepeat #-}
+instance CRepeat Tree where
+  crepeat x = n where n = Node x (repeat n)
+  {-# INLINE [1] crepeat #-}
+instance CRepeat Proxy where
+  crepeat = const Proxy
+  {-# INLINE [1] crepeat #-}
+instance CRepeat ((->) e) where
+  crepeat = const
+  {-# INLINE [1] crepeat #-}
+#endif
