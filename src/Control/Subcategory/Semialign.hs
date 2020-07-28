@@ -17,7 +17,7 @@ import           Data.List.NonEmpty          (NonEmpty)
 import           Data.Map                    (Map)
 import           Data.Proxy                  (Proxy)
 import           Data.Semialign
-import           Data.Semigroup              (Option)
+import           Data.Semigroup              (Option (..))
 import           Data.Sequence               (Seq)
 import           Data.These                  (These (..))
 import           Data.Tree                   (Tree)
