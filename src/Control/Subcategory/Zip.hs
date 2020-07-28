@@ -17,6 +17,7 @@ import           Data.Hashable                 (Hashable)
 import qualified Data.HashMap.Strict           as HM
 import qualified Data.List.NonEmpty            as NE
 import qualified Data.Map.Strict               as M
+import           Data.Semigroup                (Option (..))
 import qualified Data.Sequence                 as Seq
 import           Data.Tree                     (Tree)
 import qualified Data.Vector                   as V
@@ -25,7 +26,7 @@ import qualified Data.Vector.Storable          as S
 import qualified Data.Vector.Unboxed           as U
 import           Data.Zip
 import           GHC.Generics                  ((:*:) (..), (:.:) (..))
-import           Prelude                       hiding (zip, zipWith)
+import           Prelude                       hiding (repeat, zip, zipWith)
 import qualified Prelude                       as P
 
 class CSemialign f => CZip f where
@@ -46,6 +47,7 @@ instance Zip f => CZip (WrapFunctor f) where
 
 deriving via WrapFunctor [] instance CZip []
 deriving via WrapFunctor Maybe instance CZip Maybe
+deriving newtype instance CZip Option
 deriving via WrapFunctor ZipList instance CZip ZipList
 deriving via WrapFunctor Identity instance CZip Identity
 deriving via WrapFunctor NE.NonEmpty instance CZip NE.NonEmpty
@@ -162,3 +164,17 @@ instance (CZip f, Dom f a, Semigroup a) => Semigroup (CZippy f a) where
 instance (CRepeat f, Dom f a, Monoid a) => Monoid (CZippy f a) where
   mempty = coerce $ crepeat @f (mempty @a)
   {-# INLINE [1] mempty #-}
+
+instance Repeat f => CRepeat (WrapFunctor f) where
+  crepeat = coerce $ repeat @f @a
+    :: forall a. a -> WrapFunctor f a
+  {-# INLINE [1] crepeat #-}
+
+deriving via WrapFunctor [] instance CRepeat []
+deriving via WrapFunctor Maybe instance CRepeat Maybe
+deriving newtype instance CRepeat Option
+deriving via WrapFunctor ZipList instance CRepeat ZipList
+deriving via WrapFunctor Identity instance CRepeat Identity
+deriving via WrapFunctor NE.NonEmpty instance CRepeat NE.NonEmpty
+deriving via WrapFunctor Tree instance CRepeat Tree
+deriving via WrapFunctor ((->) e) instance CRepeat ((->) e)

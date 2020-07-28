@@ -1,4 +1,5 @@
-{-# LANGUAGE DerivingVia, StandaloneDeriving, TypeOperators #-}
+{-# LANGUAGE CPP, DerivingStrategies, DerivingVia                          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, StandaloneDeriving, TypeOperators #-}
 module Control.Subcategory.Semialign
   ( CSemialign(..), CAlign(..)
   ) where
@@ -65,8 +66,14 @@ deriving via WrapFunctor [] instance CSemialign []
 deriving via WrapFunctor [] instance CAlign []
 deriving via WrapFunctor Maybe instance CSemialign Maybe
 deriving via WrapFunctor Maybe instance CAlign Maybe
+#if MIN_VERSION_semialign(1,1,0)
 deriving via WrapFunctor Option instance CSemialign Option
 deriving via WrapFunctor Option instance CAlign Option
+#else
+deriving newtype instance CSemialign Option
+deriving newtype instance CAlign Option
+#endif
+
 deriving via WrapFunctor ZipList instance CSemialign ZipList
 deriving via WrapFunctor ZipList instance CAlign ZipList
 deriving via WrapFunctor Identity instance CSemialign Identity
