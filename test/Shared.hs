@@ -1,15 +1,16 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Shared where
+import Control.Exception
 import Language.Haskell.TH
-import Test.Hspec
 import Test.Inspection
+import Test.Tasty.HUnit
 
 checkInspection
-  :: Result -> Expectation
+  :: HasCallStack => Result -> Assertion
 checkInspection Success{} = pure ()
 checkInspection (Failure msg) =
-  fail msg
+  throwIO $ HUnitFailure Nothing msg
 
 inspecting :: String -> Obligation -> Q Exp
 inspecting desc reg =
-  [|it desc $ checkInspection $(inspectTest reg)|]
+  [|testCase desc $ checkInspection $(inspectTest reg)|]

@@ -1,79 +1,85 @@
-name:                subcategories
-version:             0.1.0.0
-github:              "konn/subcategories"
-license:             BSD3
-author:              "Hiromi ISHII"
-maintainer:          "konn.jinro _at_ gmail.com"
-copyright:           "2018 (c) Hiromi ISHII"
+name: subcategories
+version: 0.1.0.0
+github: "konn/subcategories"
+license: BSD3
+author: "Hiromi ISHII"
+maintainer: "konn.jinro _at_ gmail.com"
+copyright: "2018 (c) Hiromi ISHII"
 
-tested-with:
-  GHC == 8.6.5, GHC == 8.8.3, GHC == 8.10.1
+tested-with: GHC == 8.6.5, GHC == 8.8.3, GHC == 8.10.1
 
 extra-source-files:
-- README.md
-- ChangeLog.md
+  - README.md
+  - ChangeLog.md
 
 # Metadata used when publishing your package
-synopsis:            Subcategories induced by class constraints
-category:            Data
+synopsis: Subcategories induced by class constraints
+category: Data
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/konn/subcategories#readme>
+description: Please see the README on GitHub at <https://github.com/konn/subcategories#readme>
 
 dependencies:
-- base >= 4.7 && < 5
-- containers
-- data-default
-- hashable
-- mono-traversable
-- reflection
-- pointed
-- semialign
-- vector
-- primitive
-- template-haskell
-- these
-- unordered-containers
+  - base >= 4.7 && < 5
+  - containers
+  - data-default
+  - hashable
+  - mono-traversable
+  - reflection
+  - pointed
+  - semialign
+  - vector
+  - primitive
+  - template-haskell
+  - these
+  - unordered-containers
 
 library:
   source-dirs: src
   other-modules:
-  - Control.Subcategory.Wrapper.Internal
+    - Control.Subcategory.Wrapper.Internal
 
 ghc-options:
-- -Wall
+  - -Wall
 
 default-extensions:
-- ConstraintKinds
-- DataKinds
-- DefaultSignatures
-- DerivingStrategies
-- FlexibleContexts
-- FlexibleInstances
-- GADTs
-- GeneralizedNewtypeDeriving
-- InstanceSigs
-- KindSignatures
-- MultiParamTypeClasses
-- PolyKinds
-- ScopedTypeVariables
-- TypeApplications
-- TypeFamilies
-- TypeInType
-- UndecidableInstances
+  - ConstraintKinds
+  - DataKinds
+  - DefaultSignatures
+  - DerivingStrategies
+  - FlexibleContexts
+  - FlexibleInstances
+  - GADTs
+  - GeneralizedNewtypeDeriving
+  - InstanceSigs
+  - KindSignatures
+  - MultiParamTypeClasses
+  - PolyKinds
+  - ScopedTypeVariables
+  - TypeApplications
+  - TypeFamilies
+  - TypeInType
+  - UndecidableInstances
 
 tests:
   subcategories-test:
-    main:                opt-test.hs
-    source-dirs:         test
-    other-modules:
-    - Shared
+    main: spec.hs
+    source-dirs: test
     ghc-options:
-    - -O2
-    - -fno-hpc
+      - -O2
+      - -fno-hpc
+    build-tools:
+      - tasty-discover
     dependencies:
-    - subcategories
-    - inspection-testing
-    - hspec
+      - subcategories
+
+      - bytestring
+      - inspection-testing
+      - QuickCheck
+      - tasty
+      - tasty-expected-failure
+      - tasty-hunit
+      - tasty-quickcheck
+      - text
