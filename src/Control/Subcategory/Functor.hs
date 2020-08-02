@@ -286,7 +286,7 @@ instance Constrained (WrapMono mono) where
 
 instance {-# OVERLAPPABLE #-} MonoFunctor a
       => CFunctor (WrapMono a) where
-  cmap f = WrapMono . omap f . unwrapMono
+  cmap = coerce @((Element a -> Element a) -> a -> a) omap
   {-# INLINE [1] cmap #-}
 
   (<$:) = defaultCmapConst
