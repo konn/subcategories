@@ -10,7 +10,6 @@ module Control.Subcategory.Foldable
     cctraverseZipFreeMonoid
   ) where
 import           Control.Applicative                  (ZipList, getZipList)
-import           Control.Monad
 import           Control.Subcategory.Applicative
 import           Control.Subcategory.Functor
 import           Control.Subcategory.Pointed
@@ -51,14 +50,12 @@ import           Data.Sequences                       (IsSequence (indexEx))
 import qualified Data.Sequences                       as MT
 import qualified Data.Set                             as Set
 import qualified Data.Vector                          as V
-import qualified Data.Vector.Generic                  as G
 import qualified Data.Vector.Primitive                as P
 import qualified Data.Vector.Storable                 as S
 import qualified Data.Vector.Unboxed                  as U
 import           Foreign.Ptr                          (Ptr)
 import qualified GHC.Exts                             as GHC
 import           GHC.Generics
-import           Language.Haskell.TH                  hiding (Type)
 
 -- See Note [Function coercion]
 (#.) :: Coercible b c => (b -> c) -> (a -> b) -> (a -> c)
@@ -819,49 +816,140 @@ instance MonoFoldable mono => CFoldable (WrapMono mono) where
 instance MonoTraversable mono => CTraversable (WrapMono mono) where
   ctraverse = \f -> fmap WrapMono . otraverse f . unwrapMono
 
-fmap concat . forM
-  (map conT [''V.Vector, ''U.Vector, ''S.Vector, ''P.Vector])
-  $ \v ->
-  [d|
-    instance CFoldable $v where
-      {-# INLINE [1] cfoldr #-}
-      cfoldr = G.foldr
-      {-# INLINE [1] cfoldr' #-}
-      cfoldr' = G.foldr'
-      {-# INLINE [1] cfoldl #-}
-      cfoldl = G.foldl
-      {-# INLINE [1] cfoldl' #-}
-      cfoldl' = G.foldl'
-      {-# INLINE [1] cindex #-}
-      cindex = (G.!)
-      {-# INLINE [1] celem #-}
-      celem = G.elem
-      {-# INLINE [1] cany #-}
-      cany = G.any
-      {-# INLINE [1] call #-}
-      call = G.all
-      {-# INLINE [1] cfoldl1 #-}
-      cfoldl1 = G.foldl1
-      {-# INLINE [1] cfoldr1 #-}
-      cfoldr1 = G.foldr1
-      {-# INLINE [1] csum #-}
-      csum = G.sum
-      {-# INLINE [1] cproduct #-}
-      cproduct = G.product
-      {-# INLINE [1] cmaximum #-}
-      cmaximum = G.maximum
-      {-# INLINE [1] cminimum #-}
-      cminimum = G.minimum
-      {-# INLINE [1] ctoList #-}
-      ctoList = G.toList
-    |]
+instance CFoldable V.Vector where
+  {-# INLINE [1] cfoldr #-}
+  cfoldr = V.foldr
+  {-# INLINE [1] cfoldr' #-}
+  cfoldr' = V.foldr'
+  {-# INLINE [1] cfoldl #-}
+  cfoldl = V.foldl
+  {-# INLINE [1] cfoldl' #-}
+  cfoldl' = V.foldl'
+  {-# INLINE [1] cindex #-}
+  cindex = (V.!)
+  {-# INLINE [1] celem #-}
+  celem = V.elem
+  {-# INLINE [1] cany #-}
+  cany = V.any
+  {-# INLINE [1] call #-}
+  call = V.all
+  {-# INLINE [1] cfoldl1 #-}
+  cfoldl1 = V.foldl1
+  {-# INLINE [1] cfoldr1 #-}
+  cfoldr1 = V.foldr1
+  {-# INLINE [1] csum #-}
+  csum = V.sum
+  {-# INLINE [1] cproduct #-}
+  cproduct = V.product
+  {-# INLINE [1] cmaximum #-}
+  cmaximum = V.maximum
+  {-# INLINE [1] cminimum #-}
+  cminimum = V.minimum
+  {-# INLINE [1] ctoList #-}
+  ctoList = V.toList
+
+instance CFoldable U.Vector where
+  {-# INLINE [1] cfoldr #-}
+  cfoldr = U.foldr
+  {-# INLINE [1] cfoldr' #-}
+  cfoldr' = U.foldr'
+  {-# INLINE [1] cfoldl #-}
+  cfoldl = U.foldl
+  {-# INLINE [1] cfoldl' #-}
+  cfoldl' = U.foldl'
+  {-# INLINE [1] cindex #-}
+  cindex = (U.!)
+  {-# INLINE [1] celem #-}
+  celem = U.elem
+  {-# INLINE [1] cany #-}
+  cany = U.any
+  {-# INLINE [1] call #-}
+  call = U.all
+  {-# INLINE [1] cfoldl1 #-}
+  cfoldl1 = U.foldl1
+  {-# INLINE [1] cfoldr1 #-}
+  cfoldr1 = U.foldr1
+  {-# INLINE [1] csum #-}
+  csum = U.sum
+  {-# INLINE [1] cproduct #-}
+  cproduct = U.product
+  {-# INLINE [1] cmaximum #-}
+  cmaximum = U.maximum
+  {-# INLINE [1] cminimum #-}
+  cminimum = U.minimum
+  {-# INLINE [1] ctoList #-}
+  ctoList = U.toList
+
+instance CFoldable S.Vector where
+  {-# INLINE [1] cfoldr #-}
+  cfoldr = S.foldr
+  {-# INLINE [1] cfoldr' #-}
+  cfoldr' = S.foldr'
+  {-# INLINE [1] cfoldl #-}
+  cfoldl = S.foldl
+  {-# INLINE [1] cfoldl' #-}
+  cfoldl' = S.foldl'
+  {-# INLINE [1] cindex #-}
+  cindex = (S.!)
+  {-# INLINE [1] celem #-}
+  celem = S.elem
+  {-# INLINE [1] cany #-}
+  cany = S.any
+  {-# INLINE [1] call #-}
+  call = S.all
+  {-# INLINE [1] cfoldl1 #-}
+  cfoldl1 = S.foldl1
+  {-# INLINE [1] cfoldr1 #-}
+  cfoldr1 = S.foldr1
+  {-# INLINE [1] csum #-}
+  csum = S.sum
+  {-# INLINE [1] cproduct #-}
+  cproduct = S.product
+  {-# INLINE [1] cmaximum #-}
+  cmaximum = S.maximum
+  {-# INLINE [1] cminimum #-}
+  cminimum = S.minimum
+  {-# INLINE [1] ctoList #-}
+  ctoList = S.toList
+
+instance CFoldable P.Vector where
+  {-# INLINE [1] cfoldr #-}
+  cfoldr = P.foldr
+  {-# INLINE [1] cfoldr' #-}
+  cfoldr' = P.foldr'
+  {-# INLINE [1] cfoldl #-}
+  cfoldl = P.foldl
+  {-# INLINE [1] cfoldl' #-}
+  cfoldl' = P.foldl'
+  {-# INLINE [1] cindex #-}
+  cindex = (P.!)
+  {-# INLINE [1] celem #-}
+  celem = P.elem
+  {-# INLINE [1] cany #-}
+  cany = P.any
+  {-# INLINE [1] call #-}
+  call = P.all
+  {-# INLINE [1] cfoldl1 #-}
+  cfoldl1 = P.foldl1
+  {-# INLINE [1] cfoldr1 #-}
+  cfoldr1 = P.foldr1
+  {-# INLINE [1] csum #-}
+  csum = P.sum
+  {-# INLINE [1] cproduct #-}
+  cproduct = P.product
+  {-# INLINE [1] cmaximum #-}
+  cmaximum = P.maximum
+  {-# INLINE [1] cminimum #-}
+  cminimum = P.minimum
+  {-# INLINE [1] ctoList #-}
+  ctoList = P.toList
 
 instance CTraversable V.Vector where
   ctraverse = traverse
   {-# INLINE [1] ctraverse #-}
 
 instance CTraversable U.Vector where
-  ctraverse = \f -> fmap V.convert . traverse f . U.convert @_ @_ @V.Vector
+  ctraverse = \f -> fmap S.convert . traverse f . U.convert @_ @_ @V.Vector
   {-# INLINE [1] ctraverse #-}
 
 instance CTraversable S.Vector where

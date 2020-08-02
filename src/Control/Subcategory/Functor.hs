@@ -333,7 +333,9 @@ infixl 4 <$:>
 (<$:>) = cmap
 {-# INLINE [1] (<$:>) #-}
 
-instance Constrained V.Vector
+instance Constrained V.Vector where
+  type Dom V.Vector a = ()
+
 instance CFunctor V.Vector where
   cmap = V.map
   {-# INLINE [1] cmap #-}
