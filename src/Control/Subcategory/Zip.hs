@@ -4,7 +4,7 @@ module Control.Subcategory.Zip
     CZippy(..),
     CRepeat(..),
     module Control.Subcategory.Semialign
-  )where
+  ) where
 import           Control.Applicative           (ZipList (..))
 import           Control.Monad.Zip             (MonadZip (mzip), mzipWith)
 import           Control.Subcategory.Functor
