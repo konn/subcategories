@@ -817,6 +817,8 @@ instance MonoTraversable mono => CTraversable (WrapMono mono) where
   ctraverse = \f -> fmap WrapMono . otraverse f . unwrapMono
 
 instance CFoldable V.Vector where
+  {-# INLINE [1] cfoldMap #-}
+  cfoldMap = foldMap
   {-# INLINE [1] cfoldr #-}
   cfoldr = V.foldr
   {-# INLINE [1] cfoldr' #-}
@@ -849,6 +851,8 @@ instance CFoldable V.Vector where
   ctoList = V.toList
 
 instance CFoldable U.Vector where
+  {-# INLINE [1] cfoldMap #-}
+  cfoldMap = ofoldMap
   {-# INLINE [1] cfoldr #-}
   cfoldr = U.foldr
   {-# INLINE [1] cfoldr' #-}
