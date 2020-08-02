@@ -64,12 +64,9 @@ import           Text.ParserCombinators.ReadPrec (ReadPrec)
 
 infixl 4 <$:
 
-class Dom' f a => Dom f a
-instance Dom' f a => Dom f a
-
 class Constrained (f :: Type -> Type) where
-  type Dom' f (a :: Type) :: Constraint
-  type Dom' f a = ()
+  type Dom f (a :: Type) :: Constraint
+  type Dom f a = ()
 
 class Constrained f => CFunctor f where
   cmap :: (Dom f a, Dom f b) => (a -> b) -> f a -> f b
@@ -85,7 +82,7 @@ defaultCmapConst = cmap . const
 {-# INLINE defaultCmapConst #-}
 
 instance Constrained (WrapFunctor f) where
-  type Dom' (WrapFunctor f) a = ()
+  type Dom (WrapFunctor f) a = ()
 
 instance Functor f => CFunctor (WrapFunctor f) where
   cmap :: (a -> b) -> WrapFunctor f a -> WrapFunctor f b
@@ -200,12 +197,12 @@ instance Constrained (URec (Ptr ()))
 instance CFunctor (URec (Ptr ()))
 
 instance Constrained f => Constrained (Mon.Ap f) where
-  type Dom' (Mon.Ap f) a = Dom f a
+  type Dom (Mon.Ap f) a = Dom f a
 
 deriving newtype instance CFunctor f => CFunctor (Mon.Ap f)
 
 instance Constrained (Mon.Alt f) where
-  type Dom' (Mon.Alt f) a = Dom f a
+  type Dom (Mon.Alt f) a = Dom f a
 deriving newtype instance CFunctor f => CFunctor (Mon.Alt f)
 
 instance Constrained (Const m)
@@ -219,24 +216,24 @@ instance Constrained (K1 i c)
 instance CFunctor (K1 i c)
 
 instance Constrained (f :+: g) where
-  type Dom' (f :+: g) a = (Dom f a, Dom g a)
+  type Dom (f :+: g) a = (Dom f a, Dom g a)
 instance (CFunctor f, CFunctor g) => CFunctor (f :+: g) where
   cmap f (L1 xs) = L1 $ cmap f xs
   cmap f (R1 xs) = R1 $ cmap f xs
   {-# INLINE [1] cmap #-}
 instance Constrained (f :*: g) where
-  type Dom' (f :*: g) a = (Dom f a, Dom g a)
+  type Dom (f :*: g) a = (Dom f a, Dom g a)
 instance (CFunctor f, CFunctor g) => CFunctor (f :*: g) where
   cmap f (l :*: r) = cmap f l :*: cmap f r
   {-# INLINE cmap #-}
 
 instance Constrained (f :.: (g :: Type -> Type)) where
-  type Dom' (f :.: g) a = (Dom f (g a), Dom g a)
+  type Dom (f :.: g) a = (Dom f (g a), Dom g a)
 instance (CFunctor f, CFunctor g) => CFunctor (f :.: g) where
   cmap f gfa = Comp1 $ cmap (cmap f) $ unComp1 gfa
   {-# INLINE cmap #-}
 instance (Constrained f, Constrained g) => Constrained (SOP.Sum f g) where
-  type Dom' (SOP.Sum f g) a = (Dom f a, Dom g a)
+  type Dom (SOP.Sum f g) a = (Dom f a, Dom g a)
 
 instance (CFunctor f, CFunctor g) => CFunctor (SOP.Sum f g) where
   cmap f (SOP.InL a) = SOP.InL $ cmap f a
@@ -247,7 +244,7 @@ instance (CFunctor f, CFunctor g) => CFunctor (SOP.Sum f g) where
   {-# INLINE (<$:) #-}
 
 instance (Constrained f, Constrained g) => Constrained (SOP.Product f g) where
-  type Dom' (SOP.Product f g) a = (Dom f a, Dom g a)
+  type Dom (SOP.Product f g) a = (Dom f a, Dom g a)
 
 instance (CFunctor f, CFunctor g) => CFunctor (SOP.Product f g) where
   cmap f (SOP.Pair a b) = SOP.Pair (cmap f a) (cmap f b)
@@ -258,7 +255,7 @@ instance (CFunctor f, CFunctor g) => CFunctor (SOP.Product f g) where
 
 instance (Constrained (f ::Type -> Type), Constrained (g :: Type -> Type))
   => Constrained (SOP.Compose f g) where
-  type Dom' (SOP.Compose f g) a = (Dom g a, Dom f (g a))
+  type Dom (SOP.Compose f g) a = (Dom g a, Dom f (g a))
 
 instance (CFunctor f, CFunctor g) => CFunctor (SOP.Compose f g) where
   cmap f (SOP.Compose a) = SOP.Compose $ cmap (cmap f) a
@@ -274,7 +271,7 @@ instance CFunctor Seq.Seq
 
 #if MIN_VERSION_mono_traversable(1,0,14)
 instance Constrained (WrappedMono mono) where
-  type Dom' (WrappedMono mono) a = a ~ Element mono
+  type Dom (WrappedMono mono) a = a ~ Element mono
 
 instance MonoFunctor IS.IntSet where
   omap = IS.map
@@ -285,7 +282,7 @@ instance MonoFunctor mono => CFunctor (WrappedMono mono) where
 #endif
 
 instance Constrained (WrapMono mono) where
-  type Dom' (WrapMono mono) b = b ~ Element mono
+  type Dom (WrapMono mono) b = b ~ Element mono
 
 instance {-# OVERLAPPABLE #-} MonoFunctor a
       => CFunctor (WrapMono a) where
@@ -303,7 +300,7 @@ instance Constrained (Map.Map k)
 instance Ord k => CFunctor (Map.Map k)
 
 instance Constrained Set.Set where
-  type Dom' Set.Set a = Ord a
+  type Dom Set.Set a = Ord a
 
 instance CFunctor Set.Set where
   cmap = Set.map
@@ -312,7 +309,7 @@ instance CFunctor Set.Set where
   {-# INLINE [1] (<$:) #-}
 
 instance Constrained HS.HashSet where
-  type Dom' HS.HashSet a = (Hashable a, Eq a)
+  type Dom HS.HashSet a = (Hashable a, Eq a)
 
 instance CFunctor HS.HashSet where
   cmap = HS.map
@@ -337,24 +334,24 @@ instance CFunctor V.Vector where
   {-# INLINE [1] cmap #-}
 
 instance Constrained U.Vector where
-  type Dom' U.Vector a = U.Unbox a
+  type Dom U.Vector a = U.Unbox a
 instance CFunctor U.Vector where
   cmap = U.map
   {-# INLINE [1] cmap #-}
 instance Constrained S.Vector where
-  type Dom' S.Vector a = S.Storable a
+  type Dom S.Vector a = S.Storable a
 instance CFunctor S.Vector where
   cmap = S.map
   {-# INLINE [1] cmap #-}
 
 instance Constrained P.Vector where
-  type Dom' P.Vector a = P.Prim a
+  type Dom P.Vector a = P.Prim a
 instance CFunctor P.Vector where
   cmap = P.map
   {-# INLINE [1] cmap #-}
 
 instance Constrained PA.PrimArray where
-  type Dom' PA.PrimArray a = P.Prim a
+  type Dom PA.PrimArray a = P.Prim a
 
 instance CFunctor PA.PrimArray where
   cmap = PA.mapPrimArray

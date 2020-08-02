@@ -146,7 +146,7 @@ instance CApplicative HS.HashSet where
   {-# INLINE (.>) #-}
 
 instance Constrained f => Constrained (CApp f) where
-  type Dom' (CApp f) a = Dom f a
+  type Dom (CApp f) a = Dom f a
 
 newtype CApp f a = CApp { runCApp :: f a }
   deriving (Read, Show, Eq, Ord)
