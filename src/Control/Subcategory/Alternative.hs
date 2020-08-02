@@ -8,7 +8,6 @@ import Control.Subcategory.Functor
 import Control.Subcategory.Pointed
 
 import qualified Control.Applicative             as App
-import           Control.Monad.ST.Strict         (runST)
 import           Data.Coerce                     (coerce)
 import qualified Data.Functor.Compose            as SOP
 import qualified Data.Functor.Product            as SOP
