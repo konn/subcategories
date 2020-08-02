@@ -25,5 +25,8 @@ Some notes:
 
 - If a constrained term such as `cmap` or `czipWith` has concrete type, it must have exactly the same representation as the corresponding operation modulo (zero-cost) coercion.
   * The same still holds if the set of required constraints coincides.
+  * Although the constructor of `WrapMono mono a` is hidden, its just a `newtype`-wrapper around `mono`;
+    hence, constrained operators must have the same representations as the corresponding combinators
+    in `mono-traversable` package.
 - OTOH, for a polymorphic term, like `cmap :: (Ord a, Ord b) => (a -> b) Set a -> Set b`
   and `Set.map`, they can have different representations; indeed, `Set.map` doesn't require `a` to be `Ord`-instance and therefore the implementation of `cmap` discards the dictionary for `Ord a` to call `Set.map`.
