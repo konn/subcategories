@@ -19,6 +19,7 @@ import           Control.Exception                    (Handler)
 import qualified Control.Monad.ST.Lazy                as LST
 import qualified Control.Monad.ST.Strict              as SST
 import           Control.Subcategory.Wrapper.Internal
+import           Data.Coerce
 import           Data.Complex                         (Complex)
 import qualified Data.Functor.Compose                 as SOP
 import           Data.Functor.Const                   (Const)
@@ -305,16 +306,20 @@ instance Constrained Set.Set where
 instance CFunctor Set.Set where
   cmap = Set.map
   {-# INLINE [1] cmap #-}
-  (<$:) = defaultCmapConst
+  (<$:) = flip $ \s ->
+    if Set.null s
+    then const Set.empty else Set.singleton
   {-# INLINE [1] (<$:) #-}
 
 instance Constrained HS.HashSet where
   type Dom HS.HashSet a = (Hashable a, Eq a)
 
 instance CFunctor HS.HashSet where
+  cmap :: (Hashable b, Eq b) => (a -> b) -> HS.HashSet a -> HS.HashSet b
   cmap = HS.map
-  {-# INLINE cmap #-}
-  (<$:) = defaultCmapConst
+  {-# INLINE [1] cmap #-}
+  (<$:) = flip $ \s -> if HS.null s
+    then const HS.empty else HS.singleton
   {-# INLINE (<$:) #-}
 
 instance Constrained (HM.HashMap k)
