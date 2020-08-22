@@ -218,6 +218,10 @@ class Constrained f => CFoldable f where
   {-# INLINE [1] celem #-}
   celem = cany . (==)
 
+  cnotElem :: (Eq a, Dom f a) => a -> f a -> Bool
+  {-# INLINE [1] cnotElem #-}
+  cnotElem = call . (/=)
+
   cminimum :: (Ord a, Dom f a) => f a -> a
   {-# INLINE [1] cminimum #-}
   cminimum =
@@ -311,6 +315,8 @@ instance Foldable f => CFoldable (WrapFunctor f) where
   {-# INLINE [1] call #-}
   celem = elem
   {-# INLINE [1] celem #-}
+  cnotElem = notElem
+  {-# INLINE [1] cnotElem #-}
   cminimum = minimum
   {-# INLINE [1] cminimum #-}
   cmaximum = maximum
@@ -829,6 +835,8 @@ instance CFoldable Set.Set where
   {-# INLINE [1] cmaximum #-}
   celem = Set.member
   {-# INLINE [1] celem #-}
+  cnotElem = Set.notMember
+  {-# INLINE [1] cnotElem #-}
   cbasicToList = Set.toList
   {-# INLINE cbasicToList #-}
 
@@ -866,6 +874,11 @@ instance CTraversable HS.HashSet where
     @(Int -> IS.IntSet -> Bool)
     @(Int -> WrapMono IS.IntSet Int -> Bool)
     IS.member
+"cnotElem/IntSet"
+  cnotElem = coerce
+    @(Int -> IS.IntSet -> Bool)
+    @(Int -> WrapMono IS.IntSet Int -> Bool)
+    IS.notMember
 "cmaximum/IntSet"
   cmaximum = coerce @_ @(WrapMono IS.IntSet Int -> Int)
     IS.findMax
@@ -899,6 +912,8 @@ instance MonoFoldable mono => CFoldable (WrapMono mono) where
   {-# INLINE [1] call #-}
   celem = oelem
   {-# INLINE [1] celem #-}
+  cnotElem = onotElem
+  {-# INLINE [1] cnotElem #-}
   cminimum = minimumEx
   {-# INLINE [1] cminimum #-}
   cmaximum = maximumEx
@@ -932,6 +947,8 @@ instance CFoldable V.Vector where
   cindex = (V.!)
   {-# INLINE [1] celem #-}
   celem = V.elem
+  {-# INLINE [1] cnotElem #-}
+  cnotElem = V.notElem
   {-# INLINE [1] cany #-}
   cany = V.any
   {-# INLINE [1] call #-}
@@ -974,6 +991,8 @@ instance CFoldable U.Vector where
   cindex = (U.!)
   {-# INLINE [1] celem #-}
   celem = U.elem
+  {-# INLINE [1] cnotElem #-}
+  cnotElem = U.notElem
   {-# INLINE [1] cany #-}
   cany = U.any
   {-# INLINE [1] call #-}
@@ -1014,6 +1033,8 @@ instance CFoldable S.Vector where
   cindex = (S.!)
   {-# INLINE [1] celem #-}
   celem = S.elem
+  {-# INLINE [1] cnotElem #-}
+  cnotElem = S.notElem
   {-# INLINE [1] cany #-}
   cany = S.any
   {-# INLINE [1] call #-}
@@ -1054,6 +1075,8 @@ instance CFoldable P.Vector where
   cindex = (P.!)
   {-# INLINE [1] celem #-}
   celem = P.elem
+  {-# INLINE [1] cnotElem #-}
+  cnotElem = P.notElem
   {-# INLINE [1] cany #-}
   cany = P.any
   {-# INLINE [1] call #-}
