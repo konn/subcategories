@@ -31,6 +31,9 @@ dependencies:
   - pointed
   - semialign
   - vector
+  - vector-builder
+  - vector-algorithms
+  - foldl
   - primitive
   - template-haskell
   - these
@@ -38,6 +41,8 @@ dependencies:
 
 library:
   source-dirs: src
+  dependencies:
+    - text
   other-modules:
     - Control.Subcategory.Wrapper.Internal
 
@@ -68,7 +73,6 @@ tests:
     main: spec.hs
     source-dirs: test
     ghc-options:
-      - -O2
       - -fno-hpc
     build-tools:
       - tasty-discover

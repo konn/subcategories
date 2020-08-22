@@ -1,15 +1,21 @@
-{-# LANGUAGE CPP, DefaultSignatures, DerivingVia, LambdaCase            #-}
-{-# LANGUAGE QuantifiedConstraints, StandaloneDeriving, TemplateHaskell #-}
-{-# LANGUAGE TypeOperators                                              #-}
+{-# LANGUAGE BangPatterns, CPP, DefaultSignatures, DerivingVia, LambdaCase #-}
+{-# LANGUAGE OverloadedStrings, QuantifiedConstraints, StandaloneDeriving  #-}
+{-# LANGUAGE TemplateHaskell, TypeOperators                                #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Control.Subcategory.Foldable
-  ( CFoldable(..), CTraversable(..),
+  ( CFoldable(..),
+    ctoList,
+    CTraversable(..),
     CFreeMonoid(..),
+    cfromList,
     cfolded, cfolding,
     cctraverseFreeMonoid,
     cctraverseZipFreeMonoid
   ) where
 import           Control.Applicative                  (ZipList, getZipList)
+import           Control.Arrow                        (first, second, (***))
+import qualified Control.Foldl                        as L
+import           Control.Monad                        (forM)
 import           Control.Subcategory.Applicative
 import           Control.Subcategory.Functor
 import           Control.Subcategory.Pointed
@@ -29,10 +35,14 @@ import qualified Data.HashSet                         as HS
 import qualified Data.IntMap.Strict                   as IM
 import qualified Data.IntSet                          as IS
 import           Data.Kind                            (Type)
+import           Data.List                            (uncons)
+import           Data.List                            (intersperse)
+import           Data.List                            (nub)
+import qualified Data.List                            as List
 import           Data.List.NonEmpty                   (NonEmpty)
 import qualified Data.List.NonEmpty                   as NE
 import qualified Data.Map                             as M
-import           Data.Maybe                           (fromMaybe)
+import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Monoid                          as Mon
 import           Data.MonoTraversable                 hiding (WrappedMono,
@@ -49,18 +59,46 @@ import qualified Data.Sequence                        as Seq
 import           Data.Sequences                       (IsSequence (indexEx))
 import qualified Data.Sequences                       as MT
 import qualified Data.Set                             as Set
+import qualified Data.Text                            as T
 import qualified Data.Vector                          as V
+import qualified Data.Vector.Algorithms.Intro         as AI
 import qualified Data.Vector.Primitive                as P
 import qualified Data.Vector.Storable                 as S
 import qualified Data.Vector.Unboxed                  as U
 import           Foreign.Ptr                          (Ptr)
 import qualified GHC.Exts                             as GHC
 import           GHC.Generics
+import           Language.Haskell.TH                  hiding (Type)
+import           Language.Haskell.TH.Syntax           hiding (Type)
+import qualified VectorBuilder.Builder                as VB
+import qualified VectorBuilder.Vector                 as VB
 
 -- See Note [Function coercion]
 (#.) :: Coercible b c => (b -> c) -> (a -> b) -> (a -> c)
 (#.) _f = coerce
 {-# INLINE (#.) #-}
+
+ctoList :: (CFoldable f, Dom f a) => f a -> [a]
+{-# INLINE [1] ctoList #-}
+ctoList = cbasicToList
+
+cfromList :: (CFreeMonoid f, Dom f a) => [a] -> f a
+{-# INLINE [1] cfromList #-}
+cfromList = cbasicFromList
+
+
+-- | Fold-optic for 'CFoldable' instances.
+--   In the terminology of lens, cfolded is a constrained
+--   variant of @folded@ optic.
+--
+--  @
+--    cfolded :: (CFoldable t, Dom t a) => Fold (t a) a
+--  @
+cfolded
+  :: (CFoldable t, Dom t a)
+  => forall f. (Contravariant f, Applicative f) => (a -> f a) -> t a -> f (t a)
+{-# INLINE cfolded #-}
+cfolded = (contramap (const ()) .) . ctraverse_
 
 class Constrained f => CFoldable f where
   {-# MINIMAL cfoldMap | cfoldr #-}
@@ -80,6 +118,37 @@ class Constrained f => CFoldable f where
   {-# INLINE [1] cfoldr #-}
   cfoldr f z t = appEndo (cfoldMap (Endo #. f) t) z
 
+  cfoldlM
+    :: (Monad m, Dom f b)
+    => (a -> b -> m a) -> a -> f b -> m a
+  {-# INLINE [1] cfoldlM #-}
+  cfoldlM f z0 xs = cfoldr f' return xs z0
+    where f' x k z = f z x >>= k
+
+  cfoldlM'
+    :: (Monad m, Dom f b)
+    => (a -> b -> m a) -> a -> f b -> m a
+  {-# INLINE [1] cfoldlM' #-}
+  cfoldlM' f z0 xs = cfoldr' f' return xs z0
+    where f' !x k z = do
+            !i <- f z x
+            k i
+
+  cfoldrM
+    :: (Monad m, Dom f a)
+    => (a -> b -> m b) -> b -> f a -> m b
+  {-# INLINE [1] cfoldrM #-}
+  cfoldrM f z0 xs = cfoldl c return xs z0
+    where c k x z = f x z >>= k
+
+  cfoldrM'
+    :: (Monad m, Dom f a)
+    => (a -> b -> m b) -> b -> f a -> m b
+  {-# INLINE [1] cfoldrM' #-}
+  cfoldrM' f z0 xs = cfoldl' c return xs z0
+    where c k !x z = do
+            !i <- f x z
+            k i
   cfoldl
       :: (Dom f a)
       => (b -> a -> b) -> b -> f a -> b
@@ -96,9 +165,9 @@ class Constrained f => CFoldable f where
   cfoldl' f z0 xs = cfoldr f' id xs z0
     where f' x k z = k $! f z x
 
-  ctoList :: Dom f a => f a -> [a]
-  {-# INLINE [1] ctoList #-}
-  ctoList = cfoldr (:) []
+  cbasicToList :: Dom f a => f a -> [a]
+  {-# INLINE cbasicToList #-}
+  cbasicToList = cfoldr (:) []
 
   cfoldr1 :: Dom f a => (a -> a -> a) -> f a -> a
   {-# INLINE [1] cfoldr1 #-}
@@ -191,6 +260,14 @@ class Constrained f => CFoldable f where
       {-# INLINE c #-}
       c x k = f x *> k
 
+  clast :: Dom f a => f a -> a
+  {-# INLINE [1] clast #-}
+  clast = fromJust . L.foldOver cfolded L.last
+
+  chead :: Dom f a => f a -> a
+  {-# INLINE [1] chead #-}
+  chead = fromJust . L.foldOver cfolded L.head
+
 data Eith' a b = Left' !a | Right' !b
 
 instance Traversable f => CTraversable (WrapFunctor f) where
@@ -214,12 +291,16 @@ instance Foldable f => CFoldable (WrapFunctor f) where
   {-# INLINE [1] cfoldl #-}
   cfoldl' = foldl'
   {-# INLINE [1] cfoldl' #-}
-  ctoList = toList
-  {-# INLINE [1] ctoList #-}
+  cbasicToList = toList
+  {-# INLINE [1] cbasicToList #-}
   cfoldr1 = foldr1
   {-# INLINE [1] cfoldr1 #-}
   cfoldl1 = foldl1
   {-# INLINE [1] cfoldl1 #-}
+  cfoldlM = foldlM
+  {-# INLINE [1] cfoldlM #-}
+  cfoldrM = foldrM
+  {-# INLINE [1] cfoldrM #-}
   cnull = null
   {-# INLINE [1] cnull #-}
   clength = length
@@ -263,6 +344,17 @@ class (CFunctor f, CFoldable f) => CTraversable f where
 
 deriving via WrapFunctor []
   instance CFoldable []
+{-# RULES
+"ctoList/List"
+  ctoList = id
+"cfromList/List"
+  cbasicFromList = id
+"clast/List"
+  clast = last
+"chead/List"
+  chead = head
+  #-}
+
 instance CTraversable [] where
   ctraverse = traverse
   {-# INLINE [1] ctraverse #-}
@@ -478,10 +570,10 @@ instance (CFoldable f, CFoldable g) => CFoldable (f :+: g) where
     L1 x -> cfoldl' f z x
     R1 x -> cfoldl' f z x
   {-# INLINE [1] cfoldl' #-}
-  ctoList = \case
+  cbasicToList = \case
     L1 x -> ctoList x
     R1 x -> ctoList x
-  {-# INLINE [1] ctoList #-}
+  {-# INLINE cbasicToList #-}
   cfoldr1 = \f -> \case
     L1 x -> cfoldr1 f x
     R1 x -> cfoldr1 f x
@@ -597,10 +689,10 @@ instance (CFoldable f, CFoldable g) => CFoldable (SOP.Sum f g) where
     SOP.InL x -> cfoldl' f z x
     SOP.InR x -> cfoldl' f z x
   {-# INLINE [1] cfoldl' #-}
-  ctoList = \case
+  cbasicToList = \case
     SOP.InL x -> ctoList x
     SOP.InR x -> ctoList x
-  {-# INLINE [1] ctoList #-}
+  {-# INLINE cbasicToList #-}
   cfoldr1 = \f -> \case
     SOP.InL x -> cfoldr1 f x
     SOP.InR x -> cfoldr1 f x
@@ -684,11 +776,14 @@ instance (CFoldable f, CFoldable g) => CFoldable (SOP.Product f g) where
 
 deriving via WrapFunctor SA.SmallArray instance CFoldable SA.SmallArray
 deriving via WrapFunctor A.Array instance CFoldable A.Array
+
 instance CFoldable PA.PrimArray where
   cfoldr = PA.foldrPrimArray
   {-# INLINE [1] cfoldr #-}
   cfoldl' = PA.foldlPrimArray'
   {-# INLINE [1] cfoldl' #-}
+  cfoldlM' = PA.foldlPrimArrayM'
+  {-# INLINE [1] cfoldlM' #-}
   cfoldl = PA.foldlPrimArray
   {-# INLINE [1] cfoldl #-}
   clength = PA.sizeofPrimArray
@@ -734,8 +829,8 @@ instance CFoldable Set.Set where
   {-# INLINE [1] cmaximum #-}
   celem = Set.member
   {-# INLINE [1] celem #-}
-  ctoList = Set.toList
-  {-# INLINE [1] ctoList #-}
+  cbasicToList = Set.toList
+  {-# INLINE cbasicToList #-}
 
 instance CTraversable Set.Set where
   -- TODO: more efficient implementation
@@ -754,8 +849,8 @@ instance CFoldable HS.HashSet where
   {-# INLINE [1] cfoldl' #-}
   celem = HS.member
   {-# INLINE [1] celem #-}
-  ctoList = HS.toList
-  {-# INLINE [1] ctoList #-}
+  cbasicToList = HS.toList
+  {-# INLINE cbasicToList #-}
 
 instance CTraversable HS.HashSet where
   -- TODO: more efficient implementation
@@ -788,8 +883,10 @@ instance MonoFoldable mono => CFoldable (WrapMono mono) where
   {-# INLINE [1] cfoldr #-}
   cfoldl' = ofoldl'
   {-# INLINE [1] cfoldl' #-}
-  ctoList = otoList
-  {-# INLINE [1] ctoList #-}
+  cfoldlM = ofoldlM
+  {-# INLINE [1] cfoldlM #-}
+  cbasicToList = otoList
+  {-# INLINE cbasicToList #-}
   cfoldr1 = ofoldr1Ex
   {-# INLINE [1] cfoldr1 #-}
   cnull = onull
@@ -827,6 +924,10 @@ instance CFoldable V.Vector where
   cfoldl = V.foldl
   {-# INLINE [1] cfoldl' #-}
   cfoldl' = V.foldl'
+  {-# INLINE cfoldlM #-}
+  cfoldlM = V.foldM
+  {-# INLINE cfoldlM' #-}
+  cfoldlM' = V.foldM'
   {-# INLINE [1] cindex #-}
   cindex = (V.!)
   {-# INLINE [1] celem #-}
@@ -847,8 +948,12 @@ instance CFoldable V.Vector where
   cmaximum = V.maximum
   {-# INLINE [1] cminimum #-}
   cminimum = V.minimum
-  {-# INLINE [1] ctoList #-}
-  ctoList = V.toList
+  {-# INLINE cbasicToList #-}
+  cbasicToList = V.toList
+  {-# INLINE [1] clast #-}
+  clast = V.last
+  {-# INLINE [1] chead #-}
+  chead = V.head
 
 instance CFoldable U.Vector where
   {-# INLINE [1] cfoldMap #-}
@@ -861,6 +966,10 @@ instance CFoldable U.Vector where
   cfoldl = U.foldl
   {-# INLINE [1] cfoldl' #-}
   cfoldl' = U.foldl'
+  {-# INLINE cfoldlM #-}
+  cfoldlM = U.foldM
+  {-# INLINE cfoldlM' #-}
+  cfoldlM' = U.foldM'
   {-# INLINE [1] cindex #-}
   cindex = (U.!)
   {-# INLINE [1] celem #-}
@@ -881,8 +990,12 @@ instance CFoldable U.Vector where
   cmaximum = U.maximum
   {-# INLINE [1] cminimum #-}
   cminimum = U.minimum
-  {-# INLINE [1] ctoList #-}
-  ctoList = U.toList
+  {-# INLINE cbasicToList #-}
+  cbasicToList = U.toList
+  {-# INLINE [1] clast #-}
+  clast = U.last
+  {-# INLINE [1] chead #-}
+  chead = U.head
 
 instance CFoldable S.Vector where
   {-# INLINE [1] cfoldr #-}
@@ -893,6 +1006,10 @@ instance CFoldable S.Vector where
   cfoldl = S.foldl
   {-# INLINE [1] cfoldl' #-}
   cfoldl' = S.foldl'
+  {-# INLINE cfoldlM #-}
+  cfoldlM = S.foldM
+  {-# INLINE cfoldlM' #-}
+  cfoldlM' = S.foldM'
   {-# INLINE [1] cindex #-}
   cindex = (S.!)
   {-# INLINE [1] celem #-}
@@ -913,8 +1030,12 @@ instance CFoldable S.Vector where
   cmaximum = S.maximum
   {-# INLINE [1] cminimum #-}
   cminimum = S.minimum
-  {-# INLINE [1] ctoList #-}
-  ctoList = S.toList
+  {-# INLINE cbasicToList #-}
+  cbasicToList = S.toList
+  {-# INLINE [1] clast #-}
+  clast = S.last
+  {-# INLINE [1] chead #-}
+  chead = S.head
 
 instance CFoldable P.Vector where
   {-# INLINE [1] cfoldr #-}
@@ -925,6 +1046,10 @@ instance CFoldable P.Vector where
   cfoldl = P.foldl
   {-# INLINE [1] cfoldl' #-}
   cfoldl' = P.foldl'
+  {-# INLINE cfoldlM #-}
+  cfoldlM = P.foldM
+  {-# INLINE cfoldlM' #-}
+  cfoldlM' = P.foldM'
   {-# INLINE [1] cindex #-}
   cindex = (P.!)
   {-# INLINE [1] celem #-}
@@ -945,8 +1070,12 @@ instance CFoldable P.Vector where
   cmaximum = P.maximum
   {-# INLINE [1] cminimum #-}
   cminimum = P.minimum
-  {-# INLINE [1] ctoList #-}
-  ctoList = P.toList
+  {-# INLINE cbasicToList #-}
+  cbasicToList = P.toList
+  {-# INLINE [1] clast #-}
+  clast = P.last
+  {-# INLINE [1] chead #-}
+  chead = P.head
 
 instance CTraversable V.Vector where
   ctraverse = traverse
@@ -969,6 +1098,19 @@ instance CTraversable P.Vector where
   cindex xs = withMonoCoercible (coerce @(mono -> Int -> Element mono) indexEx xs)
   #-}
 
+{-# RULES
+"cfromList/ctoList" [~1]
+  cfromList . ctoList = id
+"cfromList/ctoList" [~1] forall xs.
+  cfromList (ctoList xs) = xs
+  #-}
+
+{-# RULES
+"ctoList/cfromList" [~1]
+  ctoList . cfromList = id
+"ctoList/cfromList" forall xs.
+  ctoList (cfromList xs) = xs
+  #-}
 -- | Free monoid functor from fullsubcategory.
 --   It must be a pointed foldable functor with the property
 --   that for any 'Monoid' @w@ and @f :: a -> w@,
@@ -982,59 +1124,331 @@ instance CTraversable P.Vector where
 --   Hence, @'Set's@ cannot be a free monoid functor;
 class (CFunctor f, forall x. Dom f x => Monoid (f x), CPointed f, CFoldable f)
   => CFreeMonoid f where
-  cfromList :: Dom f a => [a] -> f a
-  cfromList = foldr ((<>) . cpure) mempty
-  {-# INLINE [1] cfromList #-}
+  cbasicFromList :: Dom f a => [a] -> f a
+  cbasicFromList = foldr ((<>) . cpure) mempty
+  {-# INLINE cbasicFromList #-}
 
+  ccons :: Dom f a => a -> f a -> f a
+  {-# INLINE [1] ccons #-}
+  ccons = (<>) . cpure
+
+  csnoc :: Dom f a => f a -> a -> f a
+  {-# INLINE [1] csnoc #-}
+  csnoc = (. cpure) . (<>)
+
+  {- |
+    The 'cfromListN' function takes the input list's length as a hint. Its behaviour should be equivalent to 'cfromList'. The hint can be used to construct the structure l more efficiently compared to 'cfromList'.
+    If the given hint does not equal to the input list's length the behaviour of fromListN is not specified.
+  -}
   cfromListN :: Dom f a => Int -> [a] -> f a
-  cfromListN = (foldr ((<>) . cpure) mempty .) . take
+  cfromListN = const cfromList
   {-# INLINE [1] cfromListN #-}
+
+  ctake :: Dom f a => Int -> f a -> f a
+  {-# INLINE [1] ctake #-}
+  ctake n = cfromList . take n . ctoList
+
+  cdrop :: Dom f a => Int -> f a -> f a
+  {-# INLINE [1] cdrop #-}
+  cdrop n = cfromList . drop n . ctoList
+
+  cinit :: Dom f a => f a -> f a
+  {-# INLINE [1] cinit #-}
+  cinit = cfromList . init . ctoList
+
+  ctail :: Dom f a => f a -> f a
+  ctail = cfromList . tail . ctoList
+
+  csplitAt :: Dom f a => Int -> f a -> (f a, f a)
+  {-# INLINE [1] csplitAt #-}
+  csplitAt n = (\(a, b) -> (cfromList a, cfromList b)) . splitAt n . ctoList
+
+  creplicate :: Dom f a => Int -> a -> f a
+  {-# INLINE [1] creplicate #-}
+  creplicate n = cfromList . replicate n
+
+  cgenerate :: Dom f a => Int -> (Int -> a) -> f a
+  {-# INLINE [1] cgenerate #-}
+  cgenerate = \n f ->
+    cfromList [f i | i <- [0.. n - 1]]
+
+  cgenerateM :: (Dom f a, Monad m) => Int -> (Int -> m a) -> m (f a)
+  {-# INLINE [1] cgenerateM #-}
+  cgenerateM = \n f ->
+    cfromList <$> mapM f [0..n-1]
+
+  cgenerateA :: (Dom f a, Applicative g) => Int -> (Int -> g a) -> g (f a)
+  {-# INLINE [1] cgenerateA #-}
+  cgenerateA = \n f ->
+    cfromList <$> traverse f [0..n-1]
+
+  cuncons :: Dom f a => f a -> Maybe (a, f a)
+  {-# INLINE [1] cuncons #-}
+  cuncons = fmap (second cfromList) . uncons . ctoList
+
+  cunsnoc :: Dom f a => f a -> Maybe (f a, a)
+  {-# INLINE [1] cunsnoc #-}
+  cunsnoc = fmap (first cfromList) . MT.unsnoc . ctoList
+
+  creverse :: Dom f a => f a -> f a
+  {-# INLINE [1] creverse #-}
+  creverse = cfromList . reverse . ctoList
+
+  cintersperse :: Dom f a => a -> f a -> f a
+  cintersperse = \a -> cfromList . intersperse a . ctoList
+
+  cnub :: (Dom f a, Eq a) => f a -> f a
+  {-# INLINE [1] cnub #-}
+  cnub = cfromList . nub . ctoList
+
+  cnubOrd :: (Dom f a, Ord a) => f a -> f a
+  {-# INLINE [1] cnubOrd #-}
+  cnubOrd = cfromList . L.foldOver cfolded L.nub
+
+  csort :: (Dom f a, Ord a) => f a -> f a
+  {-# INLINE [1] csort #-}
+  csort = cfromList . List.sort . ctoList
+
+  csortBy :: (Dom f a) => (a -> a -> Ordering) -> f a -> f a
+  {-# INLINE [1] csortBy #-}
+  csortBy = \f -> cfromList . List.sortBy f . ctoList
+
+  cinsert :: (Dom f a, Ord a) => a -> f a -> f a
+  {-# INLINE [1] cinsert #-}
+  cinsert = \a -> cfromList . List.insert a . ctoList
+
+  cinsertBy :: (Dom f a) => (a -> a -> Ordering) -> a -> f a -> f a
+  {-# INLINE [1] cinsertBy #-}
+  cinsertBy = \f a -> cfromList . List.insertBy f a . ctoList
+
+  ctakeWhile :: Dom f a => (a -> Bool) -> f a -> f a
+  {-# INLINE [1] ctakeWhile #-}
+  ctakeWhile = \f -> cfromList . takeWhile f . ctoList
+
+  cdropWhile :: Dom f a => (a -> Bool) -> f a -> f a
+  {-# INLINE [1] cdropWhile #-}
+  cdropWhile = \f -> cfromList . dropWhile f . ctoList
+
+  cspan :: Dom f a => (a -> Bool) -> f a -> (f a, f a)
+  {-# INLINE [1] cspan #-}
+  cspan = \f -> (cfromList *** cfromList) . span f . ctoList
+
+  cbreak :: Dom f a => (a -> Bool) -> f a -> (f a, f a)
+  {-# INLINE [1] cbreak #-}
+  cbreak = \f -> (cfromList *** cfromList) . break f . ctoList
+
+  cfilter :: Dom f a => (a -> Bool) -> f a -> f a
+  {-# INLINE [1] cfilter #-}
+  cfilter = \f -> cfromList . filter f . ctoList
+
+  cpartition :: Dom f a => (a -> Bool) -> f a -> (f a, f a)
+  {-# INLINE [1] cpartition #-}
+  cpartition = \f -> (cfromList *** cfromList) . List.partition f . ctoList
+
+  -- TODO: more ListLike equivalent functions here
 
 instance CFreeMonoid [] where
-  cfromList = id
-  {-# INLINE [1] cfromList #-}
+  cbasicFromList = id
+  {-# INLINE cbasicFromList #-}
   cfromListN = take
   {-# INLINE [1] cfromListN #-}
-instance CFreeMonoid V.Vector where
-  cfromList = V.fromList
-  {-# INLINE [1] cfromList #-}
-  cfromListN = V.fromListN
-  {-# INLINE [1] cfromListN #-}
-instance CFreeMonoid U.Vector where
-  cfromList = U.fromList
-  {-# INLINE [1] cfromList #-}
-  cfromListN = U.fromListN
-  {-# INLINE [1] cfromListN #-}
-instance CFreeMonoid S.Vector where
-  cfromList = S.fromList
-  {-# INLINE [1] cfromList #-}
-  cfromListN = S.fromListN
-  {-# INLINE [1] cfromListN #-}
-instance CFreeMonoid P.Vector where
-  cfromList = P.fromList
-  {-# INLINE [1] cfromList #-}
-  cfromListN = P.fromListN
-  {-# INLINE [1] cfromListN #-}
+  ccons = (:)
+  {-# INLINE [1] ccons #-}
+  csnoc = \xs x -> xs ++ [x]
+  {-# INLINE [1] csnoc #-}
+  ctake = take
+  {-# INLINE [1] ctake #-}
+  cdrop = drop
+  {-# INLINE [1] cdrop #-}
+  cinit = init
+  {-# INLINE [1] cinit #-}
+  ctail = tail
+  {-# INLINE [1] ctail #-}
+  csplitAt = splitAt
+  {-# INLINE [1] csplitAt #-}
+  creplicate = replicate
+  {-# INLINE [1] creplicate #-}
+  cgenerateM = \n f -> mapM f [0..n-1]
+  {-# INLINE [1] cgenerateM #-}
+  cgenerateA = \n f -> traverse f [0..n-1]
+  {-# INLINE [1] cgenerateA #-}
+  cuncons = uncons
+  {-# INLINE [1] cuncons #-}
+  cunsnoc = MT.unsnoc
+  {-# INLINE [1] cunsnoc #-}
+  creverse = reverse
+  {-# INLINE [1] creverse #-}
+  cintersperse = intersperse
+  {-# INLINE [1] cintersperse #-}
+  cnub = cnub
+  {-# INLINE [1] cnub #-}
+  csort = List.sort
+  {-# INLINE [1] csort #-}
+  csortBy = List.sortBy
+  {-# INLINE [1] csortBy #-}
+  ctakeWhile = takeWhile
+  {-# INLINE [1] ctakeWhile #-}
+  cdropWhile = dropWhile
+  {-# INLINE [1] cdropWhile #-}
+  cspan = span
+  {-# INLINE [1] cspan #-}
+  cbreak = break
+  {-# INLINE [1] cbreak #-}
+  cfilter = filter
+  {-# INLINE [1] cfilter #-}
+  cpartition = List.partition
+  {-# INLINE [1] cpartition #-}
+
+fmap concat $ forM
+  [''V.Vector, ''U.Vector, ''S.Vector, ''P.Vector]
+  $ \vecTy@(Name _ (NameG _ pkg modl0@(ModName mn))) ->
+    let modl = maybe modl0 (ModName . T.unpack)
+          $ T.stripSuffix ".Base" $ T.pack mn
+        modFun fun = varE $
+          Name (OccName fun) (NameG VarName pkg modl)
+    in [d|
+    instance CFreeMonoid $(conT vecTy) where
+      cbasicFromList = $(modFun "fromList")
+      {-# INLINE cbasicFromList #-}
+      cfromListN = $(modFun "fromListN")
+      {-# INLINE [1] cfromListN #-}
+      ccons = $(modFun "cons")
+      {-# INLINE [1] ccons #-}
+      csnoc = $(modFun "snoc")
+      {-# INLINE [1] csnoc #-}
+      ctake = $(modFun "take")
+      {-# INLINE [1] ctake #-}
+      cdrop = $(modFun "drop")
+      {-# INLINE [1] cdrop #-}
+      cinit = $(modFun "init")
+      {-# INLINE [1] cinit #-}
+      ctail = $(modFun "tail")
+      {-# INLINE [1] ctail #-}
+      csplitAt = $(modFun "splitAt")
+      {-# INLINE [1] csplitAt #-}
+      creplicate = $(modFun "replicate")
+      {-# INLINE [1] creplicate #-}
+      cgenerate = $(modFun "generate")
+      {-# INLINE [1] cgenerate #-}
+      cgenerateM = $(modFun "generateM")
+      {-# INLINE [1] cgenerateM #-}
+      cgenerateA = \n f ->
+        fmap VB.build
+        $ getAp $ foldMap (Ap . fmap VB.singleton . f) [0..n-1]
+      {-# INLINE [1] cgenerateA #-}
+      cuncons = \xs ->
+        if $(modFun "null") xs
+        then Nothing
+        else Just ($(modFun "head") xs, $(modFun "tail") xs)
+      {-# INLINE [1] cuncons #-}
+      cunsnoc = \xs ->
+        if $(modFun "null") xs
+        then Nothing
+        else Just ($(modFun "init") xs, $(modFun "last") xs)
+      {-# INLINE [1] cunsnoc #-}
+      creverse = $(modFun "reverse")
+      {-# INLINE [1] creverse #-}
+      cnubOrd = $(modFun "uniq") . $(modFun "modify") AI.sort
+      {-# INLINE cnubOrd #-}
+      csort = $(modFun "modify") AI.sort
+      {-# INLINE [1] csort #-}
+      csortBy = \f -> $(modFun "modify") $ AI.sortBy f
+      {-# INLINE [1] csortBy #-}
+      ctakeWhile = $(modFun "takeWhile")
+      {-# INLINE [1] ctakeWhile #-}
+      cdropWhile = $(modFun "dropWhile")
+      {-# INLINE [1] cdropWhile #-}
+      cspan = $(modFun "span")
+      {-# INLINE [1] cspan #-}
+      cbreak = $(modFun "break")
+      {-# INLINE [1] cbreak #-}
+      cfilter = $(modFun "filter")
+      {-# INLINE [1] cfilter #-}
+      cpartition = $(modFun "partition")
+      {-# INLINE [1] cpartition #-}
+    |]
+
 instance CFreeMonoid PA.PrimArray where
-  cfromList = PA.primArrayFromList
-  {-# INLINE [1] cfromList #-}
+  cbasicFromList = PA.primArrayFromList
+  {-# INLINE cbasicFromList #-}
   cfromListN = PA.primArrayFromListN
   {-# INLINE [1] cfromListN #-}
+  cgenerate = PA.generatePrimArray
+  {-# INLINE [1] cgenerate #-}
+  cgenerateM = PA.generatePrimArrayA
+  {-# INLINE [1] cgenerateM #-}
+  cgenerateA = PA.generatePrimArrayA
+  {-# INLINE [1] cgenerateA #-}
+  cfilter = PA.filterPrimArray
+  {-# INLINE [1] cfilter #-}
+  creplicate = PA.replicatePrimArray
+  {-# INLINE [1] creplicate #-}
+
 instance CFreeMonoid SA.SmallArray where
-  cfromList = SA.smallArrayFromList
-  {-# INLINE [1] cfromList #-}
+  cbasicFromList = SA.smallArrayFromList
+  {-# INLINE cbasicFromList #-}
   cfromListN = SA.smallArrayFromListN
   {-# INLINE [1] cfromListN #-}
+
 instance CFreeMonoid A.Array where
-  cfromList = A.fromList
-  {-# INLINE [1] cfromList #-}
+  cbasicFromList = A.fromList
+  {-# INLINE cbasicFromList #-}
   cfromListN = A.fromListN
   {-# INLINE [1] cfromListN #-}
 instance CFreeMonoid Seq.Seq where
-  cfromList = Seq.fromList
-  {-# INLINE [1] cfromList #-}
+  cbasicFromList = Seq.fromList
+  {-# INLINE cbasicFromList #-}
   cfromListN = GHC.fromListN
   {-# INLINE [1] cfromListN #-}
+
+instance MT.IsSequence mono
+      => CFreeMonoid (WrapMono mono) where
+  cbasicFromList = coerce $ MT.fromList @mono
+  {-# INLINE cbasicFromList #-}
+  cfromListN = \n -> coerce $ MT.take (fromIntegral n) . MT.fromList @mono
+  {-# INLINE [1] cfromListN #-}
+  ctake = coerce . MT.take @mono . fromIntegral
+  {-# INLINE [1] ctake #-}
+  cdrop = coerce . MT.drop @mono . fromIntegral
+  {-# INLINE [1] cdrop #-}
+  ccons = coerce $ MT.cons @mono
+  {-# INLINE ccons #-}
+  csnoc = coerce $ MT.snoc @mono
+  {-# INLINE [1] csnoc #-}
+  cuncons = coerce $ MT.uncons @mono
+  {-# INLINE [1] cuncons #-}
+  cunsnoc = coerce $ MT.unsnoc @mono
+  {-# INLINE [1] cunsnoc #-}
+  ctail = coerce $ MT.tailEx @mono
+  {-# INLINE [1] ctail #-}
+  cinit = coerce $ MT.initEx @mono
+  {-# INLINE [1] cinit #-}
+  csplitAt = coerce $ \(n :: Int) ->
+      MT.splitAt @mono (fromIntegral n :: MT.Index mono)
+  {-# INLINE [1] csplitAt #-}
+  creplicate = coerce $ \(n :: Int) ->
+      MT.replicate @mono (fromIntegral n :: MT.Index mono)
+  {-# INLINE [1] creplicate #-}
+  creverse = coerce $ MT.reverse @mono
+  {-# INLINE [1] creverse #-}
+  cintersperse = coerce $ MT.intersperse @mono
+  {-# INLINE [1] cintersperse #-}
+  csort = coerce $ MT.sort @mono
+  {-# INLINE [1] csort #-}
+  csortBy = coerce $ MT.sortBy @mono
+  {-# INLINE [1] csortBy #-}
+  ctakeWhile = coerce $ MT.takeWhile @mono
+  {-# INLINE [1] ctakeWhile #-}
+  cdropWhile = coerce $ MT.dropWhile @mono
+  {-# INLINE [1] cdropWhile #-}
+  cbreak = coerce $ MT.break @mono
+  {-# INLINE [1] cbreak #-}
+  cspan = coerce $ MT.span @mono
+  {-# INLINE [1] cspan #-}
+  cfilter = coerce $ MT.filter @mono
+  {-# INLINE [1] cfilter #-}
+  cpartition = coerce $ MT.partition @mono
+  {-# INLINE [1] cpartition #-}
 
 cctraverseFreeMonoid
   ::  ( CFreeMonoid t, CApplicative f, CPointed f,
@@ -1053,19 +1467,6 @@ cctraverseZipFreeMonoid
   => (a -> f b) -> t a -> f (t b)
 cctraverseZipFreeMonoid f =
   runCZippy . cfoldMap (CZippy . cmap cpure . f)
-
--- | Fold-optic for 'CFoldable' instances.
---   In the terminology of lens, cfolded is a constrained
---   variant of @folded@ optic.
---
---  @
---    cfolded :: (CFoldable t, Dom t a) => Fold (t a) a
---  @
-cfolded
-  :: (CFoldable t, Dom t a)
-  => forall f. (Contravariant f, Applicative f) => (a -> f a) -> t a -> f (t a)
-{-# INLINE cfolded #-}
-cfolded = (contramap (const ()) .) . ctraverse_
 
 -- | Lifts 'CFoldable' along given function.
 --

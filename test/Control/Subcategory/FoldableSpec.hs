@@ -1,10 +1,11 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE AllowAmbiguousTypes, TemplateHaskell #-}
 {-# OPTIONS_GHC -dsuppress-idinfo -dsuppress-coercions
       -dsuppress-type-applications
       -dsuppress-module-prefixes -dsuppress-type-signatures
       -dsuppress-uniques #-}
 module Control.Subcategory.FoldableSpec where
 import Control.Subcategory.Foldable
+import Control.Subcategory.Functor
 
 import           Data.MonoTraversable
 import qualified Data.Vector           as V
@@ -113,3 +114,95 @@ test_cfoldMap = testGroup "cfoldMap"
         )
       ]
     ]
+
+cinit_list :: [a] -> [a]
+cinit_list = cinit
+
+init_list :: [a] -> [a]
+{-# INLINE init_list #-}
+init_list = init
+
+test_cinit :: TestTree
+test_cinit = testGroup "cinit"
+  [ testGroup "List"
+    [ $(inspecting "has the same represeitation as Prelude.init"
+      $ 'cinit_list ==- 'init_list
+      )
+    ]
+  ]
+
+ctoList_list :: [a] -> [a]
+ctoList_list = ctoList
+
+list_id :: [a] -> [a]
+list_id = id
+
+list_id_lam :: [a] -> [a]
+list_id_lam = \x -> x
+
+cfromList_list :: [a] -> [a]
+cfromList_list = cfromList
+
+test_ctoList :: TestTree
+test_ctoList = testGroup "ctoList"
+  [ testGroup "List"
+    [ $(inspecting "has the same represeitation as Prelude.id"
+      $ 'ctoList_list ==- 'list_id
+      )
+    ]
+  ]
+
+test_cfromList :: TestTree
+test_cfromList = testGroup "cfromList"
+  [ testGroup "List"
+    [ $(inspecting "has the same represeitation as Prelude.id"
+      $ 'cfromList_list ==- 'list_id
+      )
+    ]
+  ]
+
+
+ctoFromList_list :: [a] -> [a]
+ctoFromList_list = ctoList . cfromList @[]
+
+ctoFromList_bvec :: [a] -> [a]
+ctoFromList_bvec xs = ctoList (cfromList @V.Vector xs)
+
+ctoFromList_poly :: forall f a. (CFreeMonoid f, Dom f a) => [a] -> [a]
+ctoFromList_poly xs = ctoList (cfromList @f xs)
+
+list_id_with_constr :: forall f a. (CFreeMonoid f, Dom f a) => [a] -> [a]
+list_id_with_constr = \xs -> xs
+
+test_rules :: TestTree
+test_rules = testGroup "Rewrite rules"
+  [ testGroup "ctoList . cfromList = ctoList"
+    [ $(inspecting "List"
+        $ 'ctoFromList_list ==- 'list_id_lam
+      )
+    , $(inspecting "Boxed vector"
+        $ 'ctoFromList_bvec ==- 'list_id_lam
+      )
+    , $(inspecting "Polymorphic (up to dictionary leftover)"
+        $ 'ctoFromList_poly ==- 'list_id_with_constr
+      )
+    ]
+  ]
+
+cgen_bvec, gen_bvec :: Int -> (Int -> a) -> V.Vector a
+cgen_bvec = cgenerate
+gen_bvec = V.generate
+
+test_generate :: TestTree
+test_generate = testGroup "cgenerate"
+  [ $(inspecting "Boxed Vector" $ 'cgen_bvec ==- 'gen_bvec)
+  ]
+
+crev_list, rev_list :: [a] -> [a]
+crev_list = creverse
+rev_list = reverse
+
+test_reverse :: TestTree
+test_reverse = testGroup "creverse"
+  [ $(inspecting "List" $ 'crev_list ==- 'rev_list)
+  ]
