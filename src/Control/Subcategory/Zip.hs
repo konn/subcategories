@@ -279,7 +279,11 @@ cunzipDefault
 {-# INLINE cunzipDefault #-}
 cunzipDefault = cmap fst &&& cmap snd
 
+#if MIN_VERSION_semialign(1,1,0)
 instance Unzip f => CUnzip (WrapFunctor f) where
+#else
+instance (Zip f, Unzip f) => CUnzip (WrapFunctor f) where
+#endif
   cunzip :: forall a b. WrapFunctor f (a, b) -> (WrapFunctor f a, WrapFunctor f b)
   {-# INLINE cunzip #-}
   cunzip = coerce $ unzip @f @a @b
@@ -294,13 +298,13 @@ instance CUnzip [] where
   {-# INLINE [1] cunzipWith #-}
 
 deriving via WrapFunctor Maybe instance CUnzip Maybe
+#if MIN_VERSION_semialign(1,1,0)
 deriving via WrapFunctor Option instance CUnzip Option
+#endif
 deriving via [] instance CUnzip ZipList
 deriving via WrapFunctor Identity instance CUnzip Identity
 deriving via WrapFunctor NE.NonEmpty instance CUnzip NE.NonEmpty
-deriving via WrapFunctor IM.IntMap instance CUnzip IM.IntMap
 deriving via WrapFunctor Tree instance CUnzip Tree
-deriving via WrapFunctor Seq.Seq instance CUnzip Seq.Seq
 instance CUnzip V.Vector where
   cunzip = V.unzip
   {-# INLINE [1] cunzip #-}
@@ -326,10 +330,13 @@ instance CUnzip S.Vector where
     (G.convert *** G.convert)  . cunzipWith @V.Vector f . V.convert
   {-# INLINE [1] cunzipWith #-}
 deriving via WrapFunctor Proxy instance CUnzip Proxy
+#if MIN_VERSION_semialign(1,1,0)
+deriving via WrapFunctor Seq.Seq instance CUnzip Seq.Seq
 deriving via WrapFunctor (M.Map k) instance Ord k => CUnzip (M.Map k)
+deriving via WrapFunctor IM.IntMap instance CUnzip IM.IntMap
 deriving via WrapFunctor (HM.HashMap k)
   instance (Eq k, Hashable k) => CUnzip (HM.HashMap k)
-
+#endif
 
 instance (CUnzip f, CUnzip g) => CUnzip (SOP.Product f g) where
   cunzipWith f (SOP.Pair a b)  =
