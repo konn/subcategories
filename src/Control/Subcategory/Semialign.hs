@@ -5,35 +5,40 @@ module Control.Subcategory.Semialign
   ( CSemialign(..), CAlign(..),
     csalign, cpadZip, cpadZipWith
   ) where
-import           Control.Applicative         (ZipList)
-import           Control.Monad               (forM_)
-import           Control.Monad.ST.Strict     (runST)
+import           Control.Applicative                  (ZipList)
+import           Control.Monad                        (forM_)
+import           Control.Monad.ST.Strict              (runST)
 import           Control.Subcategory.Functor
-import           Data.Bifunctor              (Bifunctor (bimap))
+import           Control.Subcategory.Wrapper.Internal
+import           Data.Bifunctor                       (Bifunctor (bimap))
 import           Data.Coerce
-import           Data.Functor.Compose        (Compose (..))
-import           Data.Functor.Identity       (Identity)
-import qualified Data.Functor.Product        as SOP
-import           Data.Hashable               (Hashable)
-import           Data.HashMap.Strict         (HashMap)
-import           Data.IntMap.Strict          (IntMap)
-import qualified Data.IntSet                 as IS
-import           Data.List.NonEmpty          (NonEmpty)
-import           Data.Map                    (Map)
-import qualified Data.Primitive.Array        as A
-import qualified Data.Primitive.PrimArray    as PA
-import qualified Data.Primitive.SmallArray   as SA
-import           Data.Proxy                  (Proxy)
+import           Data.Containers
+import           Data.Functor.Compose                 (Compose (..))
+import           Data.Functor.Identity                (Identity)
+import qualified Data.Functor.Product                 as SOP
+import           Data.Hashable                        (Hashable)
+import           Data.HashMap.Strict                  (HashMap)
+import           Data.IntMap.Strict                   (IntMap)
+import qualified Data.IntSet                          as IS
+import           Data.List.NonEmpty                   (NonEmpty)
+import           Data.Map                             (Map)
+import           Data.MonoTraversable
+import qualified Data.Primitive.Array                 as A
+import qualified Data.Primitive.PrimArray             as PA
+import qualified Data.Primitive.SmallArray            as SA
+import           Data.Proxy                           (Proxy)
 import           Data.Semialign
-import           Data.Semigroup              (Option (..))
-import           Data.Sequence               (Seq)
-import           Data.These                  (These (..), fromThese, mergeThese)
-import           Data.Tree                   (Tree)
-import qualified Data.Vector                 as V
-import qualified Data.Vector.Primitive       as P
-import qualified Data.Vector.Storable        as S
-import qualified Data.Vector.Unboxed         as U
-import           GHC.Generics                ((:*:) (..), (:.:) (..))
+import           Data.Semigroup                       (Option (..))
+import           Data.Sequence                        (Seq)
+import qualified Data.Sequences                       as MT
+import           Data.These                           (These (..), fromThese,
+                                                       mergeThese)
+import           Data.Tree                            (Tree)
+import qualified Data.Vector                          as V
+import qualified Data.Vector.Primitive                as P
+import qualified Data.Vector.Storable                 as S
+import qualified Data.Vector.Unboxed                  as U
+import           GHC.Generics                         ((:*:) (..), (:.:) (..))
 
 class CFunctor f => CSemialign f where
   {-# MINIMAL calignWith #-}
@@ -52,7 +57,7 @@ instance Semialign f => CSemialign (WrapFunctor f) where
   calign = align
   {-# INLINE [1] calign #-}
 
-instance CSemialign (WrapMono IS.IntSet) where
+instance {-# OVERLAPPING #-}  CSemialign (WrapMono IS.IntSet) where
   calignWith f = withMonoCoercible @IS.IntSet $
     coerce @(IS.IntSet -> IS.IntSet -> IS.IntSet) $ \ l r ->
     let ints = l `IS.intersection` r
@@ -257,6 +262,26 @@ instance CAlign PA.PrimArray where
   cnil = PA.primArrayFromListN 0 []
   {-# INLINE [1] cnil #-}
 
+instance (MT.IsSequence mono, MonoZip mono)
+  => CSemialign (WrapMono mono) where
+  calignWith f = coerce go
+    where
+      go :: mono -> mono -> mono
+      go ls rs
+        | lenL == lenR = ozipWith (fmap f . These) ls rs
+        | lenL < lenR  =
+            ozipWith (fmap f . These) ls rs
+            <> omap (f . That) (MT.drop (fromIntegral lenL) rs)
+        | otherwise  =
+            ozipWith (fmap f . These) ls rs
+            <> omap (f . This) (MT.drop (fromIntegral lenL) ls)
+        where lenL = olength ls
+              lenR = olength rs
+
+instance (MT.IsSequence mono, MonoZip mono)
+  => CAlign (WrapMono mono) where
+  cnil = WrapMono mempty
+
 csalign :: (CSemialign f, Dom f a, Semigroup a)
   => f a -> f a -> f a
 {-# INLINE [1] csalign #-}
@@ -275,4 +300,3 @@ cpadZipWith
 {-# INLINE [1] cpadZipWith #-}
 cpadZipWith f = calignWith $
   uncurry f . fromThese Nothing Nothing . bimap Just Just
-

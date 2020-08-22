@@ -1,38 +1,49 @@
 {-# LANGUAGE CPP, DerivingVia, StandaloneDeriving, TypeOperators #-}
 module Control.Subcategory.Zip
   ( CZip(..),
+    CUnzip(..),
+    cunzipDefault,
     CZippy(..),
     CRepeat(..),
     module Control.Subcategory.Semialign
   ) where
-import           Control.Applicative           (ZipList (..))
-import           Control.Monad.Zip             (MonadZip (mzip), mzipWith)
+import           Control.Applicative                  (ZipList (..))
+import           Control.Arrow                        (Arrow ((&&&)), (***))
+import           Control.Monad.Zip                    (MonadZip (mzip),
+                                                       mzipWith)
 import           Control.Subcategory.Functor
 import           Control.Subcategory.Semialign
-import           Data.Coerce                   (coerce)
-import           Data.Functor.Compose          (Compose (..))
+import           Control.Subcategory.Wrapper.Internal
+import           Data.Coerce                          (coerce)
+import           Data.Containers
+import           Data.Functor.Compose                 (Compose (..))
 import           Data.Functor.Identity
-import qualified Data.Functor.Product          as SOP
-import           Data.Hashable                 (Hashable)
-import qualified Data.HashMap.Strict           as HM
-import qualified Data.IntMap.Strict            as IM
-import qualified Data.List.NonEmpty            as NE
-import qualified Data.Map.Strict               as M
-import qualified Data.Primitive.Array          as A
-import qualified Data.Primitive.PrimArray      as PA
-import qualified Data.Primitive.SmallArray     as SA
+import qualified Data.Functor.Product                 as SOP
+import           Data.Hashable                        (Hashable)
+import qualified Data.HashMap.Strict                  as HM
+import qualified Data.IntMap.Strict                   as IM
+import qualified Data.List.NonEmpty                   as NE
+import qualified Data.Map.Strict                      as M
+import           Data.MonoTraversable
+import qualified Data.Primitive.Array                 as A
+import qualified Data.Primitive.PrimArray             as PA
+import qualified Data.Primitive.SmallArray            as SA
 import           Data.Proxy
-import           Data.Semigroup                (Option (..))
-import qualified Data.Sequence                 as Seq
+import           Data.Semigroup                       (Option (..))
+import qualified Data.Sequence                        as Seq
+import qualified Data.Sequences                       as MT
 import           Data.Tree
-import qualified Data.Vector                   as V
-import qualified Data.Vector.Primitive         as Prim
-import qualified Data.Vector.Storable          as S
-import qualified Data.Vector.Unboxed           as U
+import qualified Data.Vector                          as V
+import qualified Data.Vector.Generic                  as G
+import qualified Data.Vector.Primitive                as Prim
+import qualified Data.Vector.Primitive                as PV
+import qualified Data.Vector.Storable                 as S
+import qualified Data.Vector.Unboxed                  as U
 import           Data.Zip
-import           GHC.Generics                  ((:*:) (..), (:.:) (..))
-import           Prelude                       hiding (repeat, zip, zipWith)
-import qualified Prelude                       as P
+import           GHC.Generics                         ((:*:) (..), (:.:) (..))
+import           Prelude                              hiding (repeat, unzip,
+                                                       zip, zipWith)
+import qualified Prelude                              as P
 
 class CSemialign f => CZip f where
   czipWith
@@ -250,3 +261,119 @@ instance CZip PA.PrimArray where
       (PA.sizeofPrimArray l `min` PA.sizeofPrimArray r) $ \n ->
         f (PA.indexPrimArray l n) (PA.indexPrimArray r n)
   {-# INLINE [1] czipWith #-}
+
+class CZip f => CUnzip f where
+  cunzip
+    :: (Dom f (a, b), Dom f a, Dom f b)
+    => f (a, b) -> (f a, f b)
+  {-# INLINE [1] cunzip #-}
+  cunzip = cunzipWith id
+
+  cunzipWith
+    :: (Dom f c, Dom f a, Dom f b)
+    => (c -> (a, b)) -> f c -> (f a, f b)
+
+cunzipDefault
+  :: (CFunctor f, Dom f (a, b), Dom f a, Dom f b)
+  => f (a, b) -> (f a, f b)
+{-# INLINE cunzipDefault #-}
+cunzipDefault = cmap fst &&& cmap snd
+
+instance Unzip f => CUnzip (WrapFunctor f) where
+  cunzip :: forall a b. WrapFunctor f (a, b) -> (WrapFunctor f a, WrapFunctor f b)
+  {-# INLINE cunzip #-}
+  cunzip = coerce $ unzip @f @a @b
+  {-# INLINE cunzipWith #-}
+  cunzipWith = coerce $ unzipWith @f @c @a @b
+    :: forall a b c. (c -> (a, b)) -> WrapFunctor f c -> (WrapFunctor f a, WrapFunctor f b)
+
+instance CUnzip [] where
+  cunzip = P.unzip
+  {-# INLINE [1] cunzip #-}
+  cunzipWith = \f -> P.unzip . map f
+  {-# INLINE [1] cunzipWith #-}
+
+deriving via WrapFunctor Maybe instance CUnzip Maybe
+deriving via WrapFunctor Option instance CUnzip Option
+deriving via [] instance CUnzip ZipList
+deriving via WrapFunctor Identity instance CUnzip Identity
+deriving via WrapFunctor NE.NonEmpty instance CUnzip NE.NonEmpty
+deriving via WrapFunctor IM.IntMap instance CUnzip IM.IntMap
+deriving via WrapFunctor Tree instance CUnzip Tree
+deriving via WrapFunctor Seq.Seq instance CUnzip Seq.Seq
+instance CUnzip V.Vector where
+  cunzip = V.unzip
+  {-# INLINE [1] cunzip #-}
+  cunzipWith = \f -> V.unzip . V.map f
+  {-# INLINE [1] cunzipWith #-}
+instance CUnzip U.Vector where
+  cunzip = U.unzip
+  {-# INLINE [1] cunzip #-}
+  cunzipWith = \f -> U.unzip . U.map f
+  {-# INLINE [1] cunzipWith #-}
+
+instance CUnzip PV.Vector where
+  cunzip = G.unzip
+  {-# INLINE [1] cunzip #-}
+  cunzipWith = \f ->
+    (G.convert *** G.convert)  . cunzipWith @V.Vector f . V.convert
+  {-# INLINE [1] cunzipWith #-}
+
+instance CUnzip S.Vector where
+  cunzip = G.unzip
+  {-# INLINE [1] cunzip #-}
+  cunzipWith = \f ->
+    (G.convert *** G.convert)  . cunzipWith @V.Vector f . V.convert
+  {-# INLINE [1] cunzipWith #-}
+deriving via WrapFunctor Proxy instance CUnzip Proxy
+deriving via WrapFunctor (M.Map k) instance Ord k => CUnzip (M.Map k)
+deriving via WrapFunctor (HM.HashMap k)
+  instance (Eq k, Hashable k) => CUnzip (HM.HashMap k)
+
+
+instance (CUnzip f, CUnzip g) => CUnzip (SOP.Product f g) where
+  cunzipWith f (SOP.Pair a b)  =
+    (SOP.Pair al bl, SOP.Pair ar br)
+    where
+      ~(al, ar) = cunzipWith f a
+      ~(bl, br) = cunzipWith f b
+  {-# INLINE [1] cunzipWith #-}
+  cunzip (SOP.Pair a b)  =
+    (SOP.Pair al bl, SOP.Pair ar br)
+    where
+      ~(al, ar) = cunzip a
+      ~(bl, br) = cunzip b
+  {-# INLINE [1] cunzip #-}
+
+instance (CUnzip f, CUnzip g) => CUnzip (f :*: g) where
+  cunzipWith f (a :*: b)  =
+    (al :*: bl, ar :*: br)
+    where
+      ~(al, ar) = cunzipWith f a
+      ~(bl, br) = cunzipWith f b
+  {-# INLINE [1] cunzipWith #-}
+  cunzip (a :*: b)  =
+    (al :*: bl, ar :*: br)
+    where
+      ~(al, ar) = cunzip a
+      ~(bl, br) = cunzip b
+  {-# INLINE [1] cunzip #-}
+
+instance (CUnzip f, CUnzip g) => CUnzip (Compose f g) where
+  cunzipWith f (Compose a) = (Compose y, Compose z) where
+    ~(y, z) = cunzipWith (cunzipWith f) a
+  {-# INLINE [1] cunzipWith #-}
+
+instance (CUnzip f, CUnzip g) => CUnzip (f :.: g) where
+  cunzipWith f (Comp1 a) = (Comp1 y, Comp1 z) where
+    ~(y, z) = cunzipWith (cunzipWith f) a
+  {-# INLINE [1] cunzipWith #-}
+
+instance (MT.IsSequence mono, MonoZip mono)
+  => CZip (WrapMono mono) where
+    czipWith f = coerce $ ozipWith @mono f
+    {-# INLINE [1] czipWith #-}
+
+instance (MT.IsSequence mono, MonoZip mono)
+  => CUnzip (WrapMono mono) where
+    cunzipWith f = coerce $ omap @mono (fst . f) &&& omap @mono (snd . f)
