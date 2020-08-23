@@ -179,6 +179,8 @@ class Constrained f => CFoldable f where
             Nothing -> x
             Just y  -> f x y
 
+
+
   cfoldl1 :: Dom f a => (a -> a -> a) -> f a -> a
   {-# INLINE [1] cfoldl1 #-}
   cfoldl1 f xs = fromMaybe (errorWithoutStackTrace "cfoldl1: empty structure")
@@ -272,6 +274,26 @@ class Constrained f => CFoldable f where
   {-# INLINE [1] chead #-}
   chead = fromJust . L.foldOver cfolded L.head
 
+  cfind :: Dom f a => (a -> Bool) -> f a -> Maybe a
+  {-# INLINE [1] cfind #-}
+  cfind = \p -> getFirst . cfoldMap (\x -> First $ if p x then Just x else Nothing)
+
+  cfindIndex :: Dom f a => (a -> Bool) -> f a -> Maybe Int
+  {-# INLINE [1] cfindIndex #-}
+  cfindIndex = \p -> L.foldOver cfolded (L.findIndex p)
+
+  cfindIndices :: Dom f a => (a -> Bool) -> f a -> [Int]
+  {-# INLINE [1] cfindIndices #-}
+  cfindIndices = \p -> List.findIndices p . ctoList
+
+  celemIndex :: (Dom f a, Eq a) => a -> f a -> Maybe Int
+  {-# INLINE [0] celemIndex #-}
+  celemIndex = cfindIndex . (==)
+
+  celemIndices :: (Dom f a, Eq a) => a -> f a -> [Int]
+  {-# INLINE [0] celemIndices #-}
+  celemIndices = cfindIndices . (==)
+
 data Eith' a b = Left' !a | Right' !b
 
 instance Traversable f => CTraversable (WrapFunctor f) where
@@ -327,6 +349,42 @@ instance Foldable f => CFoldable (WrapFunctor f) where
   {-# INLINE [1] cproduct #-}
   ctraverse_ = traverse_
   {-# INLINE [1] ctraverse_ #-}
+  cfind = find
+  {-# INLINE [1] cfind #-}
+  cfindIndex = L.fold . L.findIndex
+  {-# INLINE [1] cfindIndex #-}
+  celemIndex = L.fold . L.elemIndex
+  {-# INLINE [1] celemIndex #-}
+
+{-# RULES
+"cfind/List"
+  cfind = find @[]
+
+"cfindIndex/List"
+  cfindIndex = List.findIndex
+
+"cfindIndices/List"
+  cfindIndices = List.findIndices
+
+"celemIndex/List"
+  celemIndex = List.elemIndex
+
+"celemIndices/List"
+  celemIndices = List.elemIndices
+
+"cfindIndex/List"
+  cfindIndex = Seq.findIndexL
+
+"cfindIndices/Seq"
+  cfindIndices = Seq.findIndicesL
+
+"celemIndex/Seq"
+  celemIndex = Seq.elemIndexL
+
+"celemIndices/Seq"
+  celemIndices = Seq.elemIndicesL
+
+  #-}
 
 {-# RULES
 "cctraverse_/traverse_"
@@ -839,6 +897,10 @@ instance CFoldable Set.Set where
   {-# INLINE [1] cnotElem #-}
   cbasicToList = Set.toList
   {-# INLINE cbasicToList #-}
+  celemIndex = Set.lookupIndex
+  {-# INLINE [1] celemIndex #-}
+  cindex = flip Set.elemAt
+  {-# INLINE [1] cindex #-}
 
 instance CTraversable Set.Set where
   -- TODO: more efficient implementation
@@ -971,6 +1033,16 @@ instance CFoldable V.Vector where
   clast = V.last
   {-# INLINE [1] chead #-}
   chead = V.head
+  {-# INLINE [1] cfind #-}
+  cfind = V.find
+  {-# INLINE [1] cfindIndex #-}
+  cfindIndex = V.findIndex
+  {-# INLINE [1] cfindIndices #-}
+  cfindIndices = fmap V.toList . V.findIndices
+  {-# INLINE [1] celemIndex #-}
+  celemIndex = V.elemIndex
+  {-# INLINE [1] celemIndices #-}
+  celemIndices = fmap V.toList . V.elemIndices
 
 instance CFoldable U.Vector where
   {-# INLINE [1] cfoldMap #-}
@@ -1015,6 +1087,16 @@ instance CFoldable U.Vector where
   clast = U.last
   {-# INLINE [1] chead #-}
   chead = U.head
+  {-# INLINE [1] cfind #-}
+  cfind = U.find
+  {-# INLINE [1] cfindIndex #-}
+  cfindIndex = U.findIndex
+  {-# INLINE [1] cfindIndices #-}
+  cfindIndices = fmap U.toList . U.findIndices
+  {-# INLINE [1] celemIndex #-}
+  celemIndex = U.elemIndex
+  {-# INLINE [1] celemIndices #-}
+  celemIndices = fmap U.toList . U.elemIndices
 
 instance CFoldable S.Vector where
   {-# INLINE [1] cfoldr #-}
@@ -1057,6 +1139,16 @@ instance CFoldable S.Vector where
   clast = S.last
   {-# INLINE [1] chead #-}
   chead = S.head
+  {-# INLINE [1] cfind #-}
+  cfind = S.find
+  {-# INLINE [1] cfindIndex #-}
+  cfindIndex = S.findIndex
+  {-# INLINE [1] cfindIndices #-}
+  cfindIndices = fmap S.toList . S.findIndices
+  {-# INLINE [1] celemIndex #-}
+  celemIndex = S.elemIndex
+  {-# INLINE [1] celemIndices #-}
+  celemIndices = fmap S.toList . S.elemIndices
 
 instance CFoldable P.Vector where
   {-# INLINE [1] cfoldr #-}
@@ -1099,6 +1191,16 @@ instance CFoldable P.Vector where
   clast = P.last
   {-# INLINE [1] chead #-}
   chead = P.head
+  {-# INLINE [1] cfind #-}
+  cfind = P.find
+  {-# INLINE [1] cfindIndex #-}
+  cfindIndex = P.findIndex
+  {-# INLINE [1] cfindIndices #-}
+  cfindIndices = fmap P.toList . P.findIndices
+  {-# INLINE [1] celemIndex #-}
+  celemIndex = P.elemIndex
+  {-# INLINE [1] celemIndices #-}
+  celemIndices = fmap P.toList . P.elemIndices
 
 instance CTraversable V.Vector where
   ctraverse = traverse
