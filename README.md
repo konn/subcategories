@@ -1,5 +1,9 @@
 # The `subcategories` package
 
+![Haskell CI](https://github.com/konn/subcategories/workflows/Haskell%20CI/badge.svg)
+![Hackage](https://img.shields.io/hackage/v/subcategories)
+![Hackage-Deps](https://img.shields.io/hackage-deps/v/subcategories)
+
 This package provides variants of functor-like structures,
 with domain types are constrained.
 In particular, this package provides an abstraction for functorial
