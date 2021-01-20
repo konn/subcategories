@@ -4,5 +4,8 @@
   "haskell.formatOnImportOn": false,
   "[haskell]": {
     "editor.defaultFormatter": "haskell.haskell"
-  }
+  },
+  "github-actions.workflows.pinned.workflows": [
+   ".github/workflows/haskell.yml"
+  ]
 }
