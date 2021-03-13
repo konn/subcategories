@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 859ae459f671cbb7025ba675ee831adc1ab0a22b9ab89b6b263a3376615db438
+-- hash: fe6bc4de5931551cb2eb584dcbd9ed3c9ed1692f00c9fa0323cc2b6ddb28fb61
 
 name:           subcategories
-version:        0.1.0.0
+version:        0.1.1.0
 synopsis:       Subcategories induced by class constraints
 description:    Please see the README on GitHub at <https://github.com/konn/subcategories#readme>
 category:       Data
