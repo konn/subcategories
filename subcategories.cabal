@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 06bb5130d08da403db0bdee15f708a050dca4d9ba1adb757dd932c9586b3b0c2
+-- hash: 859ae459f671cbb7025ba675ee831adc1ab0a22b9ab89b6b263a3376615db438
 
 name:           subcategories
 version:        0.1.0.0
@@ -18,7 +18,7 @@ maintainer:     konn.jinro _at_ gmail.com
 copyright:      2018 (c) Hiromi ISHII
 license:        BSD3
 license-file:   LICENSE
-tested-with:    GHC == 8.6.5, GHC == 8.8.3, GHC == 8.10.1
+tested-with:    GHC == 8.6.5, GHC == 8.8.3, GHC == 8.10.3, GHC == 9.0.1
 build-type:     Simple
 extra-source-files:
     README.md
