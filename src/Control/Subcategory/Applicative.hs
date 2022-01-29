@@ -1,4 +1,5 @@
 {-# LANGUAGE EmptyCase, StandaloneDeriving, TupleSections #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE UndecidableSuperClasses                      #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Control.Subcategory.Applicative
@@ -24,7 +25,9 @@ import           Data.List.NonEmpty              (NonEmpty)
 import qualified Data.Map                        as Map
 import qualified Data.Primitive.Array            as A
 import qualified Data.Primitive.SmallArray       as SA
+#if !MIN_VERSION_base(4,16,0)
 import qualified Data.Semigroup                  as Sem
+#endif
 import qualified Data.Sequence                   as Seq
 import qualified Data.Set                        as Set
 import qualified Data.Tree                       as Tree
@@ -64,7 +67,9 @@ instance CApplicative Maybe
 instance CApplicative Identity
 instance CApplicative Tree.Tree
 instance CApplicative Seq.Seq
+#if !MIN_VERSION_base(4,16,0)
 instance CApplicative Sem.Option
+#endif
 instance CApplicative NonEmpty
 instance CApplicative ((->) a)
 instance CApplicative (Either a)

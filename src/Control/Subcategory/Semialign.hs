@@ -28,7 +28,9 @@ import qualified Data.Primitive.PrimArray             as PA
 import qualified Data.Primitive.SmallArray            as SA
 import           Data.Proxy                           (Proxy)
 import           Data.Semialign
+#if !MIN_VERSION_base(4,16,0)
 import           Data.Semigroup                       (Option (..))
+#endif
 import           Data.Sequence                        (Seq)
 import qualified Data.Sequences                       as MT
 import           Data.These                           (These (..), fromThese,
@@ -79,12 +81,14 @@ deriving via WrapFunctor [] instance CSemialign []
 deriving via WrapFunctor [] instance CAlign []
 deriving via WrapFunctor Maybe instance CSemialign Maybe
 deriving via WrapFunctor Maybe instance CAlign Maybe
+#if !MIN_VERSION_base(4,16,0)
 #if MIN_VERSION_semialign(1,1,0)
 deriving via WrapFunctor Option instance CSemialign Option
 deriving via WrapFunctor Option instance CAlign Option
 #else
 deriving newtype instance CSemialign Option
 deriving newtype instance CAlign Option
+#endif
 #endif
 
 deriving via WrapFunctor ZipList instance CSemialign ZipList

@@ -1,4 +1,5 @@
 {-# LANGUAGE EmptyCase, ScopedTypeVariables, StandaloneDeriving #-}
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Control.Subcategory.Alternative
   (CAlternative(..), CChoice(..), CAlt(..)) where
@@ -49,7 +50,10 @@ instance CChoice PA.PrimArray where
 instance CChoice SA.SmallArray
 instance CChoice A.Array
 instance CChoice Seq.Seq
+#if !MIN_VERSION_base(4,16,0)
 instance CChoice Sem.Option
+#endif
+
 instance CChoice NonEmpty where
   (<!>) = (Sem.<>)
   {-# INLINE (<!>) #-}
@@ -123,7 +127,9 @@ instance (CAlternative f, CAlternative g) => CAlternative (SOP.Product f g) wher
 instance CAlternative []
 instance CAlternative Maybe
 instance CAlternative Seq.Seq
+#if !MIN_VERSION_base(4,16,0)
 instance CAlternative Sem.Option
+#endif
 instance CAlternative ReadP
 instance CAlternative V.Vector
 instance CAlternative U.Vector where

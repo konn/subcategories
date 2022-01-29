@@ -29,7 +29,9 @@ import qualified Data.Primitive.Array                 as A
 import qualified Data.Primitive.PrimArray             as PA
 import qualified Data.Primitive.SmallArray            as SA
 import           Data.Proxy
+#if !MIN_VERSION_base(4,16,0)
 import           Data.Semigroup                       (Option (..))
+#endif
 import qualified Data.Sequence                        as Seq
 import qualified Data.Sequences                       as MT
 import           Data.Tree
@@ -63,7 +65,9 @@ instance Zip f => CZip (WrapFunctor f) where
 
 deriving via WrapFunctor [] instance CZip []
 deriving via WrapFunctor Maybe instance CZip Maybe
+#if !MIN_VERSION_base(4,16,0)
 deriving newtype instance CZip Option
+#endif
 deriving via WrapFunctor ZipList instance CZip ZipList
 deriving via WrapFunctor Identity instance CZip Identity
 deriving via WrapFunctor NE.NonEmpty instance CZip NE.NonEmpty
@@ -211,7 +215,9 @@ instance Repeat f => CRepeat (WrapFunctor f) where
   {-# INLINE [1] crepeat #-}
 deriving via WrapFunctor [] instance CRepeat []
 deriving via WrapFunctor Maybe instance CRepeat Maybe
+#if !MIN_VERSION_base(4,16,0)
 deriving newtype instance CRepeat Option
+#endif
 deriving via WrapFunctor ZipList instance CRepeat ZipList
 deriving via WrapFunctor Identity instance CRepeat Identity
 deriving via WrapFunctor NE.NonEmpty instance CRepeat NE.NonEmpty
@@ -299,7 +305,9 @@ instance CUnzip [] where
 
 deriving via WrapFunctor Maybe instance CUnzip Maybe
 #if MIN_VERSION_semialign(1,1,0)
+#if !MIN_VERSION_base(4,16,0)
 deriving via WrapFunctor Option instance CUnzip Option
+#endif
 #endif
 deriving via [] instance CUnzip ZipList
 deriving via WrapFunctor Identity instance CUnzip Identity

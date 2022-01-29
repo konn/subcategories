@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingVia, StandaloneDeriving, TypeOperators #-}
+{-# LANGUAGE CPP #-}
 module Control.Subcategory.Pointed where
 import Control.Subcategory.Functor
 
@@ -54,7 +55,10 @@ instance CPointed Mon.First
 instance CPointed Mon.Last
 instance CPointed Sem.First
 instance CPointed Sem.Last
+#if !MIN_VERSION_base(4,16,0)
 instance CPointed Sem.Option
+#endif
+
 instance CPointed NonEmpty
 instance CPointed App.ZipList
 instance CPointed Identity

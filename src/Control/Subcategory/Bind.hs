@@ -1,5 +1,5 @@
-module Control.Subcategory.Bind
-  (CBind(..), CMonad, creturn, (-<<)) where
+{-# LANGUAGE CPP #-}
+module Control.Subcategory.Bind (CBind(..), CMonad, creturn, (-<<)) where
 import Control.Subcategory.Functor
 import Control.Subcategory.Pointed
 
@@ -17,7 +17,9 @@ import qualified Data.IntSet                     as IS
 import           Data.List.NonEmpty              (NonEmpty)
 import qualified Data.Map                        as Map
 import           Data.MonoTraversable
+#if !MIN_VERSION_base(4,16,0)
 import qualified Data.Semigroup                  as Sem
+#endif
 import qualified Data.Sequence                   as Seq
 import qualified Data.Set                        as Set
 import qualified Data.Tree                       as Tree
@@ -94,10 +96,11 @@ instance CBind NonEmpty where
 instance CBind Seq.Seq where
   (>>-) = (>>=)
   {-# INLINE (>>-) #-}
-
+#if !MIN_VERSION_base(4,16,0)
 instance CBind Sem.Option where
   (>>-) = (>>=)
   {-# INLINE (>>-) #-}
+#endif
 
 instance CBind ((->) a) where
   (>>-) = (>>=)
