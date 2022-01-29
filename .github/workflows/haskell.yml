@@ -5,16 +5,18 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  schedule:
+  - cron: "00 13 * * *"
 
 jobs:
 
   build:
     strategy:
       matrix:
-        ghc: ["8.6.5", "8.8.4", "8.10.3"]
+        ghc: ["8.8.4", "8.10.7", "9.0.2"]
         falliable: [false]
         include:
-        - ghc: "9.0.1"
+        - ghc: "9.2.1"
           falliable: true
       fail-fast: false
     continue-on-error: ${{ matrix.falliable }}

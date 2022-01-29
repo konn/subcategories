@@ -1,0 +1,7 @@
+resolver: nightly-2022-01-27
+
+flags: {}
+packages:
+- .
+
+extra-deps: []
