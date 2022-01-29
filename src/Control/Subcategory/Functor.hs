@@ -139,8 +139,11 @@ instance Constrained GetOpt.OptDescr
 instance CFunctor GetOpt.OptDescr
 instance Constrained GetOpt.ArgOrder
 instance CFunctor GetOpt.ArgOrder
+#if !MIN_VERSION_base(4,16,0)
 instance Constrained Sem.Option
 instance CFunctor Sem.Option
+#endif
+
 
 instance Constrained Sem.Last
 instance CFunctor Sem.Last

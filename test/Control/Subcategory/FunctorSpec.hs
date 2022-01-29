@@ -100,6 +100,9 @@ cmap_Set = cmap
 map_Set :: Ord b => (Int -> b) -> Set Int -> Set b
 map_Set = Set.map
 
+map_Set_eta :: Ord b => (Int -> b) -> Set Int -> Set b
+map_Set_eta a b = Set.map a b
+
 cmap_HashSet
   :: (Hashable b, Eq b)
   => (String -> Maybe b) -> HashSet String -> HashSet (Maybe b)
@@ -198,7 +201,7 @@ test_cmap = testGroup "cmap"
     ]
   , testGroup "Set"
     [ $(inspecting "has the same representation as Set.map"
-      $ 'cmap_Set ==- 'map_Set
+      $ 'cmap_Set ==- if ghcVer >= GHC9_0 then 'map_Set_eta else 'map_Set
       )
     , $(inspecting "has no instance dictionary except Ord"
       $ 'cmap_Set `hasNoTypeClassesExcept` [''Ord]

@@ -16,6 +16,8 @@ import qualified Data.Vector.Unboxed   as U
 import           Shared
 import           Test.Inspection
 import           Test.Tasty
+import Data.Function ((&))
+import Test.Tasty.ExpectedFailure (expectFailBecause)
 
 cfoldr_uvec :: (Int -> b -> b) -> b -> U.Vector Int -> b
 cfoldr_uvec = cfoldr
@@ -80,7 +82,9 @@ test_cfoldr = testGroup "cfoldr"
       )
     , $(inspecting "has no instance dictionary other than Unbox (if polymorphic)"
       $ 'cfoldr_uvec_poly `hasNoTypeClassesExcept` [''U.Unbox]
-      )
+      ) & if ghcVer >= GHC9_0
+      then expectFailBecause "Simplified subsumption sacrifices this and fails for GHC >= 9.0.1."
+      else id
     ]
   , testGroup "SVector"
     [ $(inspecting "has the same representation as S.foldr (if an element is concrete)"
@@ -88,15 +92,19 @@ test_cfoldr = testGroup "cfoldr"
       )
     , $(inspecting "has no instance dictionary other than Storable (if polymorphic)"
       $ 'cfoldr_svec_poly `hasNoTypeClassesExcept` [''S.Storable]
-      )
+      ) & if ghcVer >= GHC9_0
+      then expectFailBecause "Simplified subsumption sacrifices this and fails for GHC >= 9.0.1."
+      else id
     ]
   , testGroup "PVector"
     [ $(inspecting "has the same representation as P.foldr (if an element is concrete)"
         $ 'cfoldr_pvec ==- 'foldr_pvec
       )
-    , $(inspecting "has no instance dictionary other than Storable (if polymorphic)"
+    , $(inspecting "has no instance dictionary other than Prim (if polymorphic)"
       $ 'cfoldr_pvec_poly `hasNoTypeClassesExcept` [''P.Prim]
-      )
+      ) & if ghcVer >= GHC9_0
+      then expectFailBecause "Simplified subsumption sacrifices this and fails for GHC >= 9.0.1."
+      else id
     ]
   ]
 

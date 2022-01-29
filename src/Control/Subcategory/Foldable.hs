@@ -52,8 +52,7 @@ import qualified Data.Primitive.Array                 as A
 import qualified Data.Primitive.PrimArray             as PA
 import qualified Data.Primitive.SmallArray            as SA
 import           Data.Proxy                           (Proxy)
-import           Data.Semigroup                       (Arg, Max (..), Min (..),
-                                                       Option)
+import           Data.Semigroup                       (Arg, Max (..), Min (..))
 import qualified Data.Semigroup                       as Sem
 import qualified Data.Sequence                        as Seq
 import           Data.Sequences                       (IsSequence (indexEx))
@@ -511,11 +510,14 @@ instance CTraversable ZipList where
   cindex = (!!) . getZipList
   #-}
 
-deriving via WrapFunctor Option
-  instance CFoldable Option
-instance CTraversable Option where
+#if !MIN_VERSION_base(4,16,0)
+deriving via WrapFunctor Sem.Option
+  instance CFoldable Sem.Option
+instance CTraversable Sem.Option where
   ctraverse = traverse
   {-# INLINE [1] ctraverse #-}
+#endif
+
 deriving via WrapFunctor Min
   instance CFoldable Min
 instance CTraversable Min where
