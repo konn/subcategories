@@ -96,7 +96,7 @@ in  { on =
                             echo "Testing: ''${TEST_EXE}"
                             TEST_BIN="${dl-path}/${test-bins-dir}/''${TEST_EXE}"
                             chmod +x "''${TEST_BIN}"
-                            "''${TEST_BIN}" +RTS -N
+                            "''${TEST_BIN}"
                           done < "${dl-path}/${test-list-file}"
                           ''
                   }

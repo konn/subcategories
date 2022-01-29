@@ -76,7 +76,7 @@ jobs:
           echo "Testing: ${TEST_EXE}"
           TEST_BIN="${{steps.test-bins.outputs.download-path}}/tests/${TEST_EXE}"
           chmod +x "${TEST_BIN}"
-          "${TEST_BIN}" +RTS -N
+          "${TEST_BIN}"
         done < "${{steps.test-bins.outputs.download-path}}/tests.txt"
     strategy:
       "fail-fast": false
