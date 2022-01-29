@@ -169,5 +169,5 @@ instance (Dom f a, CApplicative f, Semigroup a, Dom f (a, a))
 
 instance (Dom f a, CPointed f, CApplicative f, Monoid a, Dom f (a, a))
        => Monoid (CApp f a) where
-  CApp a `mappend` CApp b = CApp $ uncurry mappend <$:> pair a b
+  mappend = (<>)
   mempty = CApp $ cpure mempty
