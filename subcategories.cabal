@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fe6bc4de5931551cb2eb584dcbd9ed3c9ed1692f00c9fa0323cc2b6ddb28fb61
+-- hash: 3848b400ccd9773f379cb7b339adf58f1da6d24bb902dcb0d929accc0846cc18
 
 name:           subcategories
 version:        0.1.1.0
@@ -18,7 +18,8 @@ maintainer:     konn.jinro _at_ gmail.com
 copyright:      2018 (c) Hiromi ISHII
 license:        BSD3
 license-file:   LICENSE
-tested-with:    GHC == 8.6.5, GHC == 8.8.3, GHC == 8.10.3, GHC == 9.0.1
+tested-with:
+    GHC == 8.8.4, GHC == 8.10.7, GHC == 9.0.2
 build-type:     Simple
 extra-source-files:
     README.md
@@ -46,7 +47,24 @@ library
       Control.Subcategory.Wrapper.Internal
   hs-source-dirs:
       src
-  default-extensions: ConstraintKinds DataKinds DefaultSignatures DerivingStrategies FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures MultiParamTypeClasses PolyKinds ScopedTypeVariables TypeApplications TypeFamilies TypeInType UndecidableInstances
+  default-extensions:
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FlexibleContexts
+      FlexibleInstances
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      MultiParamTypeClasses
+      PolyKinds
+      ScopedTypeVariables
+      TypeApplications
+      TypeFamilies
+      TypeInType
+      UndecidableInstances
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
@@ -79,7 +97,24 @@ test-suite subcategories-test
       Paths_subcategories
   hs-source-dirs:
       test
-  default-extensions: ConstraintKinds DataKinds DefaultSignatures DerivingStrategies FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures MultiParamTypeClasses PolyKinds ScopedTypeVariables TypeApplications TypeFamilies TypeInType UndecidableInstances
+  default-extensions:
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DerivingStrategies
+      FlexibleContexts
+      FlexibleInstances
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      MultiParamTypeClasses
+      PolyKinds
+      ScopedTypeVariables
+      TypeApplications
+      TypeFamilies
+      TypeInType
+      UndecidableInstances
   ghc-options: -Wall -fno-hpc
   build-tool-depends:
       tasty-discover:tasty-discover
