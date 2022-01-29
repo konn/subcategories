@@ -32,10 +32,9 @@ jobs:
         mkdir -p "test-bins/tests"
         touch "test-bins/tests.txt"
         stack ide targets 2>&1 | grep :test: | while read i; do
-          PACK=$(echo "$i" | cut -d':' -f1);
           EXE=$(echo "$i" | cut -d':' -f3);
           echo "${EXE}" >> "test-bins/tests.txt"
-          cp "${PACK}/$(stack path --dist-dir)/build/${EXE}/${EXE}" "test-bins/tests";
+          cp "$(stack path --dist-dir)/build/${EXE}/${EXE}" "test-bins/tests";
           echo 
         done
     - name: "Upload test-artifacts-${{ matrix.ghc }}"
