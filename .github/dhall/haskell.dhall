@@ -62,10 +62,9 @@ in  { on =
                           mkdir -p "${test-bins-artifact.path}${test-bins-dir}"
                           touch "${test-list}"
                           stack ide targets 2>&1 | grep :test: | while read i; do
-                            PACK=$(echo "$i" | cut -d':' -f1);
                             EXE=$(echo "$i" | cut -d':' -f3);
                             echo "''${EXE}" >> "${test-list}"
-                            cp "''${PACK}/$(stack path --dist-dir)/build/''${EXE}/''${EXE}" "${test-bins-artifact.path}${test-bins-dir}";
+                            cp "$(stack path --dist-dir)/build/''${EXE}/''${EXE}" "${test-bins-artifact.path}${test-bins-dir}";
                             echo 
                           done
                           ''
