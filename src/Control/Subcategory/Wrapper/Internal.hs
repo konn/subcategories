@@ -52,4 +52,4 @@ withMonoCoercible
   :: (Coercible (WrapMono mono (Element mono)) mono => r)
   -> r
 {-# INLINE withMonoCoercible #-}
-withMonoCoercible = \x -> x
+withMonoCoercible = id

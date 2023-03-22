@@ -1,6 +1,0 @@
-cradle:
-  stack:
-    - path: "src"
-      component: "subcategories:lib"
-    - path: "test"
-      component: "subcategories:test:subcategories-test"

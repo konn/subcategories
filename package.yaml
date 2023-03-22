@@ -6,7 +6,8 @@ author: "Hiromi ISHII"
 maintainer: "konn.jinro _at_ gmail.com"
 copyright: "2018 (c) Hiromi ISHII"
 
-tested-with: GHC == 8.8.4, GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.1
+tested-with: |
+  GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.7 || ==9.4.4 || ==9.6.1
 
 extra-source-files:
   - README.md
@@ -49,6 +50,10 @@ library:
 ghc-options:
   - -Wall
 
+when:
+- condition: impl(ghc >= 9.2.4)
+  default-extensions:  [DeepSubsumption]
+
 default-extensions:
   - ConstraintKinds
   - DataKinds
@@ -65,7 +70,6 @@ default-extensions:
   - ScopedTypeVariables
   - TypeApplications
   - TypeFamilies
-  - TypeInType
   - UndecidableInstances
 
 tests:

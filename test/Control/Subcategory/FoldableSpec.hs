@@ -1,4 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes, TemplateHaskell #-}
+{-# LANGUAGE AllowAmbiguousTypes, TemplateHaskell, DeepSubsumption #-}
 {-# OPTIONS_GHC -dsuppress-idinfo -dsuppress-coercions
       -dsuppress-type-applications
       -dsuppress-module-prefixes -dsuppress-type-signatures
