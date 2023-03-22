@@ -52,7 +52,7 @@ ghc-options:
 
 when:
 - condition: impl(ghc >= 9.2.4)
-  default-extensions:  [DeepSubsumption]
+  extensions:  [DeepSubsumption]
   cpp-options: "-DDEEP_SUBSUMPTION"
 - condition: impl(ghc < 9.0)
   cpp-options: "-DDEEP_SUBSUMPTION"

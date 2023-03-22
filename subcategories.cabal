@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 95cfa72eafc5a0f11c7846aea599cd1b7378bc7e1a260832e49b6146bf3565e2
+-- hash: e585a5f5de9db8947e81c57031daf4960c73b93f60a109424d6f33feb871c48c
 
 name:           subcategories
 version:        0.2.0.1
@@ -86,8 +86,6 @@ library
     , vector-builder
   default-language: Haskell2010
   if impl(ghc >= 9.2.4)
-    default-extensions:
-        DeepSubsumption
     cpp-options: -DDEEP_SUBSUMPTION
   if impl(ghc < 9.0)
     cpp-options: -DDEEP_SUBSUMPTION
@@ -151,8 +149,6 @@ test-suite subcategories-test
     , vector-builder
   default-language: Haskell2010
   if impl(ghc >= 9.2.4)
-    default-extensions:
-        DeepSubsumption
     cpp-options: -DDEEP_SUBSUMPTION
   if impl(ghc < 9.0)
     cpp-options: -DDEEP_SUBSUMPTION
