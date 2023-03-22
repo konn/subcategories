@@ -54,6 +54,8 @@ when:
 - condition: impl(ghc >= 9.2.4)
   default-extensions:  [DeepSubsumption]
   cpp-options: "-DDEEP_SUBSUMPTION"
+- condition: impl(ghc < 9.2)
+  cpp-options: "-DDEEP_SUBSUMPTION"
 
 default-extensions:
   - ConstraintKinds
