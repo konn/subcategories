@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3f800f7e46c42bb02e2f9317a645b49e44f1cfc40a0cbfe7cd85ed54fd5f076f
+-- hash: b205d7c239a1a9c5cc60f84fa9ad631a733929dd4eee15d81de325e65139f449
 
 name:           subcategories
 version:        0.2.0.0
@@ -88,6 +88,7 @@ library
   if impl(ghc >= 9.2.4)
     default-extensions:
         DeepSubsumption
+    cpp-options: -DDEEP_SUBSUMPTION
 
 test-suite subcategories-test
   type: exitcode-stdio-1.0
@@ -150,3 +151,4 @@ test-suite subcategories-test
   if impl(ghc >= 9.2.4)
     default-extensions:
         DeepSubsumption
+    cpp-options: -DDEEP_SUBSUMPTION
