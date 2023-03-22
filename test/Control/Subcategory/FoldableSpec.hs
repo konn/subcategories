@@ -133,7 +133,8 @@ init_list = init
 test_cinit :: TestTree
 test_cinit = testGroup "cinit"
   [ testGroup "List"
-    [ $(inspecting "has the same represeitation as Prelude.init"
+    [ (if ghcVer >= GHC9_4 then expectFailBecause "GHC >= 9.4 does different thing on CallStack" else id)
+      $(inspecting "has the same represeitation as Prelude.init"
       $ 'cinit_list ==- 'init_list
       )
     ]
