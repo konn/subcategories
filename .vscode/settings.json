@@ -1,11 +1,17 @@
 {
-  "editor.defaultFormatter": "vigoo.stylish-haskell",
-  "haskell.formattingProvider": "stylish-haskell",
-  "haskell.formatOnImportOn": false,
+  "haskell.formattingProvider": "fourmolu",
+  "haskell.toolchain": {
+    "hls": "1.9.0.0-48-ge7273d82",
+    "ghc": "9.6.1",
+    "cabal": "3.10.1.0"
+  },
   "[haskell]": {
     "editor.defaultFormatter": "haskell.haskell"
   },
-  "github-actions.workflows.pinned.workflows": [
-   ".github/workflows/haskell.yml"
-  ]
+  "emeraldwalk.runonsave": {
+    "commands": [
+      { "cmd": "hpack", "match": "(package\\.yaml|\\.l?hs)$", "isAsync": true }
+    ]
+  },
+  "github-actions.workflows.pinned.workflows": [".github/workflows/haskell.yml"]
 }

@@ -279,7 +279,7 @@ class Constrained f => CFoldable f where
 
   cfindIndex :: Dom f a => (a -> Bool) -> f a -> Maybe Int
   {-# INLINE [1] cfindIndex #-}
-  cfindIndex = \p -> L.foldOver cfolded (L.findIndex p)
+  cfindIndex = L.foldOver cfolded . L.findIndex
 
   cfindIndices :: Dom f a => (a -> Bool) -> f a -> [Int]
   {-# INLINE [1] cfindIndices #-}
