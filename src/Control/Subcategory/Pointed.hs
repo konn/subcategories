@@ -131,5 +131,9 @@ instance CPointed SA.SmallArray where
   {-# INLINE [1] cpure #-}
 
 instance CPointed A.Array where
+#if MIN_VERSION_primitive(0,9,0)
+  cpure = A.arrayFromListN 1 . pure
+#else
   cpure = A.fromListN 1 . pure
+#endif
   {-# INLINE [1] cpure #-}
