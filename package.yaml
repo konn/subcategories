@@ -1,10 +1,10 @@
 name: subcategories
-version: 0.2.1.1
+version: 0.2.1.0
 github: "konn/subcategories"
 license: BSD3
 author: "Hiromi ISHII"
 maintainer: "konn.jinro _at_ gmail.com"
-copyright: "2018 (c) Hiromi ISHII"
+copyright: "2023 (c) Hiromi ISHII"
 
 tested-with: |
   GHC ==9.0.2 || ==9.2.8 || ==9.4.8 || ==9.6.3 || ==9.8.1
