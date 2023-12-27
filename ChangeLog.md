@@ -1,6 +1,6 @@
 # Changelog for subcategories
 
-## 0.2.0.2
+## 0.2.1.0
 
 * Supports GHC 9.8
 * Drops support for GHC <9
