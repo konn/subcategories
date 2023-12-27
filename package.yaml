@@ -1,5 +1,5 @@
 name: subcategories
-version: 0.2.0.1
+version: 0.2.1.1
 github: "konn/subcategories"
 license: BSD3
 author: "Hiromi ISHII"
@@ -7,7 +7,7 @@ maintainer: "konn.jinro _at_ gmail.com"
 copyright: "2018 (c) Hiromi ISHII"
 
 tested-with: |
-  GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.7 || ==9.4.4 || ==9.6.1
+  GHC ==9.0.2 || ==9.2.8 || ==9.4.8 || ==9.6.3 || ==9.8.1
 
 extra-source-files:
   - README.md
@@ -53,8 +53,6 @@ ghc-options:
 when:
 - condition: impl(ghc >= 9.2.4)
   extensions:  [DeepSubsumption]
-  cpp-options: "-DDEEP_SUBSUMPTION"
-- condition: impl(ghc < 9.0)
   cpp-options: "-DDEEP_SUBSUMPTION"
 
 default-extensions:

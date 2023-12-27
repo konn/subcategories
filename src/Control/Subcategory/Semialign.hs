@@ -235,7 +235,11 @@ instance CSemialign A.Array where
   {-# INLINE [1] calignWith #-}
 
 instance CAlign A.Array where
+#if MIN_VERSION_primitive(0,9,0)
+  cnil = A.arrayFromListN 0 []
+#else
   cnil = A.fromListN 0 []
+#endif
   {-# INLINE [1] cnil #-}
 
 instance CSemialign PA.PrimArray where

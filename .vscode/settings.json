@@ -1,10 +1,5 @@
 {
   "haskell.formattingProvider": "fourmolu",
-  "haskell.toolchain": {
-    "hls": "1.9.0.0-48-ge7273d82",
-    "ghc": "9.6.1",
-    "cabal": "3.10.1.0"
-  },
   "[haskell]": {
     "editor.defaultFormatter": "haskell.haskell"
   },

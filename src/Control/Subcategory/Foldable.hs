@@ -302,10 +302,8 @@ instance Traversable f => CTraversable (WrapFunctor f) where
 instance Foldable f => CFoldable (WrapFunctor f) where
   cfoldMap = foldMap
   {-# INLINE [1] cfoldMap #-}
-#if MIN_VERSION_base(4,13,0)
   cfoldMap' = foldMap'
   {-# INLINE [1] cfoldMap' #-}
-#endif
   cfold = fold
   {-# INLINE [1] cfold #-}
   cfoldr = foldr
@@ -1518,10 +1516,18 @@ instance CFreeMonoid SA.SmallArray where
   {-# INLINE [1] cfromListN #-}
 
 instance CFreeMonoid A.Array where
+#if MIN_VERSION_primitive(0,9,0)
+  cbasicFromList = A.arrayFromList
+  {-# INLINE cbasicFromList #-}
+  cfromListN = A.arrayFromListN
+  {-# INLINE [1] cfromListN #-}
+#else
   cbasicFromList = A.fromList
   {-# INLINE cbasicFromList #-}
   cfromListN = A.fromListN
   {-# INLINE [1] cfromListN #-}
+#endif
+
 instance CFreeMonoid Seq.Seq where
   cbasicFromList = Seq.fromList
   {-# INLINE cbasicFromList #-}
