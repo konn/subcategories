@@ -19,11 +19,13 @@ inspecting :: String -> Obligation -> Q Exp
 inspecting desc reg =
   [|testCase desc $ checkInspection $(inspectTest reg)|]
 
-data GHCVer = GHC8_8 | GHC8_10 | GHC9_0 | GHC9_2 | GHC9_4 | GHC9_6
+data GHCVer = GHC8_8 | GHC8_10 | GHC9_0 | GHC9_2 | GHC9_4 | GHC9_6 | GHC9_8
   deriving (Show, Eq, Ord)
 
 ghcVer :: GHCVer
-#if __GLASGOW_HASKELL__ == 906
+#if __GLASGOW_HASKELL__ == 908
+ghcVer = GHC9_8
+#elif __GLASGOW_HASKELL__ == 906
 ghcVer = GHC9_6
 #elif __GLASGOW_HASKELL__ == 904
 ghcVer = GHC9_4
