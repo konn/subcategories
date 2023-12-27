@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e585a5f5de9db8947e81c57031daf4960c73b93f60a109424d6f33feb871c48c
+-- hash: 4f6be3dcaf3b173a9a036d3e16e3d67719a8c5d9f8d89d76d299519b00c5119a
 
 name:           subcategories
 version:        0.2.0.1
@@ -19,7 +19,7 @@ copyright:      2018 (c) Hiromi ISHII
 license:        BSD3
 license-file:   LICENSE
 tested-with:
-    GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.7 || ==9.4.4 || ==9.6.1
+    GHC ==9.0.2 || ==9.2.8 || ==9.4.8 || ==9.6.3 || ==9.8.1
 
 build-type:     Simple
 extra-source-files:
@@ -87,8 +87,6 @@ library
   default-language: Haskell2010
   if impl(ghc >= 9.2.4)
     cpp-options: -DDEEP_SUBSUMPTION
-  if impl(ghc < 9.0)
-    cpp-options: -DDEEP_SUBSUMPTION
 
 test-suite subcategories-test
   type: exitcode-stdio-1.0
@@ -149,6 +147,4 @@ test-suite subcategories-test
     , vector-builder
   default-language: Haskell2010
   if impl(ghc >= 9.2.4)
-    cpp-options: -DDEEP_SUBSUMPTION
-  if impl(ghc < 9.0)
     cpp-options: -DDEEP_SUBSUMPTION
