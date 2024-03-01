@@ -48,6 +48,7 @@ jobs:
         ghc-version: ${{matrix.ghc}}
         cabal-version: 3.10.1.0
         enable-stack: false
+        ghcup-release-channel: https://ghc.gitlab.haskell.org/ghcup-metadata/ghcup-nightlies-0.0.7.yaml
 
     - name: Restore Cache ~/.cabal/store
       uses: actions/cache/restore@v3
