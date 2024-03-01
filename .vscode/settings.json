@@ -8,5 +8,10 @@
       { "cmd": "hpack", "match": "(package\\.yaml|\\.l?hs)$", "isAsync": true }
     ]
   },
-  "github-actions.workflows.pinned.workflows": [".github/workflows/haskell.yml"]
+  "github-actions.workflows.pinned.workflows": [
+    ".github/workflows/haskell.yml"
+  ],
+  "files.associations": {
+    "**/ci-configs/*.config": "cabal"
+  }
 }

@@ -17,102 +17,121 @@ jobs:
     name: Generate Build Matrix Dynamically
     runs-on: ubuntu-latest
     outputs:
-      configs: ${{ steps.enumerate.outputs.configs }}
+      plan: ${{steps.list-ci.outputs.plan}}
     steps:
     - uses: actions/checkout@v3
-    - name: Enumerate Configs
-      id: enumerate
-      run: |
-        set -euxo pipefail
-        find ci-configs -type f -name 'ghc-*.config' \
-          | sort -h | jq -ncR '[inputs | {ghc:  match("ghc-(.+)\\.config$", .) | .captures[0].string | select(.), plan: .}]' | tee configs.json
-        echo "configs=$(cat configs.json)" >> "${GITHUB_OUTPUT}"
+      with:
+        ref: ${{github.event.pull_request.head.sha || github.sha}}
+    - name: Enumerate CI plans
+      id: list-ci
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const script = require('./scripts/enumerate-ci.js')
+          await script({github, context, core, glob, io, require})
 
   build:
     needs: [enumerate]
     continue-on-error: true
     strategy:
-      fail-fast: false
       matrix:
-        include: ${{fromJSON(needs.enumerate.outputs.configs)}}
+        plan: ${{fromJSON(needs.enumerate.outputs.plan)}}
+      fail-fast: false
 
     runs-on: ubuntu-latest
-    name: Haskell GHC ${{ matrix.ghc }} Build
+    name: Haskell GHC ${{ matrix.plan.ghc }} Build
     env:
-      CABAL: cabal --project-file=${{matrix.plan}}
+      cabal-version: 3.10.2.0
+      CABAL: "cabal --project-file=${{matrix.plan.path}}"
+      ghc: ${{matrix.plan.ghc}}
+      project-file: ${{matrix.plan.path}}
+      plan: ${{matrix.plan.name}}
+      artifact-name: "artifact-${{matrix.plan.name}}"
 
     steps:
-    - uses: actions/checkout@v3
-    - uses: haskell-actions/setup@v2
-      with:
-        ghc-version: ${{matrix.ghc}}
-        cabal-version: 3.10.1.0
-        enable-stack: false
+      - uses: actions/checkout@v3
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: ${{env.ghc}}
+          cabal-version: ${{env.cabal-version}}
+          enable-stack: false
+          ghcup-release-channel: https://ghc.gitlab.haskell.org/ghcup-metadata/ghcup-nightlies-0.0.7.yaml
 
-    - name: Restore Cache ~/.cabal/store
-      uses: actions/cache/restore@v3
-      env:
-        cache-name: cache-cabal-store
-      with:
-        path: ~/.cabal/store
-        key: build-${{ runner.os }}-${{env.cache-name}}-${{matrix.ghc}}-${{ hashFiles('**/*.cabal', '${{matrix.plan}}') }}
-        restore-keys: |
-          build-${{ runner.os }}-${{env.cache-name}}-${{matrix.ghc}}-
+      - name: Restore Cache ~/.cabal/store
+        uses: actions/cache/restore@v3
+        env:
+          cache-name: cache-cabal-store
+        with:
+          path: ~/.cabal/store
+          key: build-${{ runner.os }}-${{env.cache-name}}-${{env.ghc}}-${{ hashFiles('**/*.cabal', '${{env.plan}}') }}
+          restore-keys: |
+            build-${{ runner.os }}-${{env.cache-name}}-${{env.ghc}}-
 
-    - name: Cache dist-newstyle
-      uses: actions/cache@v3
-      env:
-        cache-name: cache-dist-newstyle
-      with:
-        path: dist-newstyle
-        key: build-${{ runner.os }}-${{ env.cache-name }}-${{matrix.ghc}}-${{ hashFiles('**/*.cabal', '${{matrix.plan}}') }}-${{ hashFiles('**/*.hs') }}
-        restore-keys: |
-          build-${{ runner.os }}-${{ env.cache-name }}-${{matrix.ghc}}-${{ hashFiles('**/*.cabal', '${{matrix.plan}}') }}-
-          build-${{ runner.os }}-${{ env.cache-name }}-${{matrix.ghc}}-
+      - name: Cache dist-newstyle
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-dist-newstyle
+        with:
+          path: dist-newstyle
+          key: build-${{ runner.os }}-${{ env.cache-name }}-${{env.ghc}}-${{ hashFiles('**/*.cabal', '${{env.plan}}') }}-${{ hashFiles('**/*.hs') }}
+          restore-keys: |
+            build-${{ runner.os }}-${{ env.cache-name }}-${{env.ghc}}-${{ hashFiles('**/*.cabal', '${{env.plan}}') }}-
+            build-${{ runner.os }}-${{ env.cache-name }}-${{env.ghc}}-
 
-    - name: Configure and Update
-      run: |
-        ${CABAL} v2-configure --enable-tests --enable-benchmarks
-        ${CABAL} v2-update
-    - name: Build Dependencies
-      run: |
-        ${CABAL} v2-build all --only-dependencies
-    - name: Save Cache ~/.cabal/store
-      uses: actions/cache/save@v3
-      env:
-        cache-name: cache-cabal-store
-      with:
-        path: ~/.cabal/store
-        key: build-${{ runner.os }}-${{env.cache-name}}-${{matrix.ghc}}-${{ hashFiles('**/*.cabal', '${{matrix.plan}}') }}
+      - name: Configure and Update
+        run: |
+          ${CABAL} v2-configure --enable-tests --enable-benchmarks
+          ${CABAL} v2-update
+      - name: Build Dependencies
+        run: |
+          ${CABAL} v2-build all --only-dependencies
+      - name: Save Cache ~/.cabal/store
+        uses: actions/cache/save@v3
+        env:
+          cache-name: cache-cabal-store
+        with:
+          path: ~/.cabal/store
+          key: build-${{ runner.os }}-${{env.cache-name}}-${{env.ghc}}-${{ hashFiles('**/*.cabal', '${{env.plan}}') }}
 
-    - name: Build
-      run: |
-        ${CABAL} v2-build all
-    - name: Collect binaries
-      run: ./scripts/collect-artifacts.sh artifacts
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: binaries-${{matrix.ghc}}-${{runner.os}}
-        path: artifacts.tar.zst
-        retention-days: 3
+      - name: Build
+        run: |
+          ${CABAL} v2-build all
+      - name: Collect binaries
+        run: ./scripts/collect-artifacts.sh artifacts
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries-${{env.ghc}}-${{runner.os}}
+          path: artifacts.tar.zst
+          retention-days: 3
 
   test:
     needs: [enumerate, build]
     strategy:
-      fail-fast: false
       matrix:
-        include: ${{fromJSON(needs.enumerate.outputs.configs)}}
-
+        plan: ${{fromJSON(needs.enumerate.outputs.plan)}}
+      fail-fast: false
     runs-on: ubuntu-latest
-    name: Haskell GHC ${{ matrix.ghc }} Test
+    env:
+      cabal-version: 3.10.2.0
+      CABAL: "cabal --project-file=${{matrix.plan.path}}"
+      ghc: ${{matrix.plan.ghc}}
+      project-file: ${{matrix.plan.path}}
+      plan: ${{matrix.plan.name}}
+      artifact-name: "artifact-${{matrix.plan.name}}"
+
+    name: Haskell GHC ${{ matrix.plan.ghc }} Test
+    continue-on-error: ${{matrix.plan.is_head}}
 
     steps:
+    - name: Fail when Corresponding Build wouldn't succeeded
+      if: ${{needs.build.result != 'success' }}
+      run: echo "BUILD FAILED" >&2; exit 1
     - uses: actions/checkout@v3
     - uses: actions/download-artifact@v3
       id: download
       with:
-        name: binaries-${{matrix.ghc}}-${{runner.os}}
+        name: binaries-${{env.ghc}}-${{runner.os}}
     - name: Extract and Run All Tests
       run: |
         set -euxo pipefail
