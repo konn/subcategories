@@ -53,7 +53,7 @@ jobs:
       - uses: haskell-actions/setup@v2
         with:
           ghc-version: ${{env.ghc}}
-          cabal-version: 3.10.1.0
+          cabal-version: ${{env.cabal-version}}
           enable-stack: false
           ghcup-release-channel: https://ghc.gitlab.haskell.org/ghcup-metadata/ghcup-nightlies-0.0.7.yaml
 
