@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.stackage.org)",
+      "WebFetch(domain:www.stackage.org)",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
+    ],
+    "deny": []
+  }
+}

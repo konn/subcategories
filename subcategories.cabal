@@ -1,150 +1,142 @@
-cabal-version: 1.12
-
--- This file has been generated from package.yaml by hpack version 0.36.0.
---
--- see: https://github.com/sol/hpack
---
--- hash: 57c0624b88014e4f30969cb894c4466d5a927a1f684a4b9ce3428107c766bf51
-
-name:           subcategories
-version:        0.2.1.1
-synopsis:       Subcategories induced by class constraints
-description:    Please see the README on GitHub at <https://github.com/konn/subcategories#readme>
-category:       Data
-homepage:       https://github.com/konn/subcategories#readme
-bug-reports:    https://github.com/konn/subcategories/issues
-author:         Hiromi ISHII
-maintainer:     konn.jinro _at_ gmail.com
-copyright:      2023 (c) Hiromi ISHII
-license:        BSD3
-license-file:   LICENSE
+cabal-version: 3.4
+name: subcategories
+version: 0.2.1.2
+synopsis: Subcategories induced by class constraints
+description: Please see the README on GitHub at <https://github.com/konn/subcategories#readme>
+category: Data
+homepage: https://github.com/konn/subcategories#readme
+bug-reports: https://github.com/konn/subcategories/issues
+author: Hiromi ISHII
+maintainer: konn.jinro _at_ gmail.com
+copyright: 2023 (c) Hiromi ISHII
+license: BSD-3-Clause
+license-file: LICENSE
 tested-with:
-    GHC ==9.0.2 || ==9.2.8 || ==9.4.8 || ==9.6.4 || ==9.8.2 || ==9.10.1
+  ghc ==9.6.7 || ==9.8.4 || ==9.10.2 || ==9.12.2
 
-build-type:     Simple
+build-type: Simple
 extra-source-files:
-    README.md
-    ChangeLog.md
+  ChangeLog.md
+  README.md
 
 source-repository head
   type: git
   location: https://github.com/konn/subcategories
 
-library
-  exposed-modules:
-      Control.Subcategory
-      Control.Subcategory.Alternative
-      Control.Subcategory.Alternative.Class
-      Control.Subcategory.Applicative
-      Control.Subcategory.Applicative.Class
-      Control.Subcategory.Bind
-      Control.Subcategory.Foldable
-      Control.Subcategory.Functor
-      Control.Subcategory.Pointed
-      Control.Subcategory.RebindableSyntax
-      Control.Subcategory.Semialign
-      Control.Subcategory.Zip
-  other-modules:
-      Control.Subcategory.Wrapper.Internal
-  hs-source-dirs:
-      src
+common defaults
   default-extensions:
-      ConstraintKinds
-      DataKinds
-      DefaultSignatures
-      DerivingStrategies
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      InstanceSigs
-      KindSignatures
-      MultiParamTypeClasses
-      PolyKinds
-      ScopedTypeVariables
-      TypeApplications
-      TypeFamilies
-      UndecidableInstances
-  ghc-options: -Wall
+    ConstraintKinds
+    DataKinds
+    DefaultSignatures
+    DerivingStrategies
+    FlexibleContexts
+    FlexibleInstances
+    GADTs
+    GeneralizedNewtypeDeriving
+    InstanceSigs
+    KindSignatures
+    MultiParamTypeClasses
+    PolyKinds
+    ScopedTypeVariables
+    TypeApplications
+    TypeFamilies
+    UndecidableInstances
+
+  default-language: GHC2021
+  autogen-modules: Paths_subcategories
+  other-modules: Paths_subcategories
+  ghc-options:
+    -Wall
+    -Wcompat
+    -Widentities
+    -Wincomplete-record-updates
+    -Wincomplete-uni-patterns
+    -Wmissing-export-lists
+    -Wmissing-home-modules
+    -Wpartial-fields
+    -Wredundant-constraints
+    -Wunused-packages
+
+library
+  import: defaults
+  -- cabal-gild: discover src --exclude=src/**/Internal.hs
+  exposed-modules:
+    Control.Subcategory
+    Control.Subcategory.Alternative
+    Control.Subcategory.Alternative.Class
+    Control.Subcategory.Applicative
+    Control.Subcategory.Applicative.Class
+    Control.Subcategory.Bind
+    Control.Subcategory.Foldable
+    Control.Subcategory.Functor
+    Control.Subcategory.Pointed
+    Control.Subcategory.RebindableSyntax
+    Control.Subcategory.Semialign
+    Control.Subcategory.Zip
+
+  -- cabal-gild: discover src --include=src/**/Internal.hs
+  other-modules:
+    Control.Subcategory.Wrapper.Internal
+
+  hs-source-dirs: src
   build-depends:
-      base >=4.7 && <5
-    , containers
-    , data-default
-    , foldl
-    , hashable
-    , mono-traversable
-    , pointed
-    , primitive
-    , reflection
-    , semialign
-    , template-haskell
-    , text
-    , these
-    , unordered-containers
-    , vector
-    , vector-algorithms
-    , vector-builder
-  default-language: Haskell2010
-  if impl(ghc >= 9.2.4)
-    cpp-options: -DDEEP_SUBSUMPTION
+    base >=4.7 && <5,
+    containers,
+    data-default,
+    foldl,
+    hashable,
+    mono-traversable,
+    pointed,
+    primitive,
+    reflection,
+    semialign,
+    template-haskell,
+    text,
+    these,
+    unordered-containers,
+    vector,
+    vector-algorithms,
+    vector-builder,
 
 test-suite subcategories-test
+  import: defaults
   type: exitcode-stdio-1.0
   main-is: spec.hs
+  -- cabal-gild: discover test --exclude=test/spec.hs
   other-modules:
-      Control.Subcategory.FoldableSpec
-      Control.Subcategory.FunctorSpec
-      Control.Subcategory.ZipSpec
-      Shared
-      Paths_subcategories
-  hs-source-dirs:
-      test
-  default-extensions:
-      ConstraintKinds
-      DataKinds
-      DefaultSignatures
-      DerivingStrategies
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      InstanceSigs
-      KindSignatures
-      MultiParamTypeClasses
-      PolyKinds
-      ScopedTypeVariables
-      TypeApplications
-      TypeFamilies
-      UndecidableInstances
-  ghc-options: -Wall -fno-hpc
+    Control.Subcategory.FoldableSpec
+    Control.Subcategory.FunctorSpec
+    Control.Subcategory.ZipSpec
+    Shared
+
+  hs-source-dirs: test
+  ghc-options: -fno-hpc
   build-tool-depends:
-      tasty-discover:tasty-discover
+    tasty-discover:tasty-discover
+
   build-depends:
-      QuickCheck
-    , base >=4.7 && <5
-    , bytestring
-    , containers
-    , data-default
-    , foldl
-    , hashable
-    , inspection-testing
-    , mono-traversable
-    , pointed
-    , primitive
-    , reflection
-    , semialign
-    , subcategories
-    , tasty
-    , tasty-expected-failure
-    , tasty-hunit
-    , tasty-quickcheck
-    , template-haskell
-    , text
-    , these
-    , unordered-containers
-    , vector
-    , vector-algorithms
-    , vector-builder
-  default-language: Haskell2010
-  if impl(ghc >= 9.2.4)
-    cpp-options: -DDEEP_SUBSUMPTION
+    QuickCheck,
+    base >=4.7 && <5,
+    bytestring,
+    containers,
+    data-default,
+    foldl,
+    hashable,
+    inspection-testing,
+    mono-traversable,
+    pointed,
+    primitive,
+    reflection,
+    semialign,
+    subcategories,
+    tasty,
+    tasty-expected-failure,
+    tasty-hunit,
+    tasty-quickcheck,
+    template-haskell,
+    text,
+    these,
+    unordered-containers,
+    vector,
+    vector-algorithms,
+    vector-builder,
