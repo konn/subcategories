@@ -49,9 +49,4 @@ withMonoCoercible
   :: (Coercible (WrapMono mono (Element mono)) mono => r)
   -> r
 {-# INLINE withMonoCoercible #-}
-#if defined(DEEP_SUBSUMPTION)
 withMonoCoercible = id
-#else
-withMonoCoercible = \x -> x
-#endif
-
