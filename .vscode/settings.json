@@ -5,7 +5,11 @@
   },
   "emeraldwalk.runonsave": {
     "commands": [
-      { "cmd": "hpack", "match": "(package\\.yaml|\\.l?hs)$", "isAsync": true }
+      {
+        "cmd": "find . \\( -name '*.cabal' -o -name 'cabal.project*' -o -path './ci-configs/cabal.project' -o -path './ci-configs/*.config' \\) -exec cabal-gild --io {} \\;",
+        "match": "(\\.cabal|cabal\\.project.*|ci-configs/\\.*|\\.l?hs)$",
+        "isAsync": true
+      }
     ]
   },
   "github-actions.workflows.pinned.workflows": [
