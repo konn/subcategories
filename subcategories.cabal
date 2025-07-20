@@ -1,11 +1,4 @@
-cabal-version: 1.12
-
--- This file has been generated from package.yaml by hpack version 0.36.0.
---
--- see: https://github.com/sol/hpack
---
--- hash: 57c0624b88014e4f30969cb894c4466d5a927a1f684a4b9ce3428107c766bf51
-
+cabal-version: 3.4
 name:           subcategories
 version:        0.2.1.1
 synopsis:       Subcategories induced by class constraints
@@ -16,10 +9,10 @@ bug-reports:    https://github.com/konn/subcategories/issues
 author:         Hiromi ISHII
 maintainer:     konn.jinro _at_ gmail.com
 copyright:      2023 (c) Hiromi ISHII
-license:        BSD3
+license:        BSD-3-Clause
 license-file:   LICENSE
 tested-with:
-    GHC ==9.0.2 || ==9.2.8 || ==9.4.8 || ==9.6.4 || ==9.8.2 || ==9.10.1
+    GHC ==9.0.2 || ==9.2.8 || ==9.4.8 || ==9.6.4 || ==9.8.2 || ==9.10.2 || ==9.12.2
 
 build-type:     Simple
 extra-source-files:
