@@ -83,3 +83,8 @@ Uses GitHub Actions with dynamic matrix generation:
 - Multiple GHC versions tested via `scripts/enumerate-ci.js`
 - Separate build and test phases with artifact caching
 - Custom artifact collection via `scripts/collect-artifacts.sh`
+
+## Freeze File Management
+
+- When Adding new freeze file to ci-configs, Prepend `import: cabal.project` at the top of freeze file.
+- When downloading freeze file under ci-configs, use `wget https://www.stackage.org/{snapshot}/cabal.config -O ci-configs/ghc-{version}.project` command DO NOT read the file contents.
