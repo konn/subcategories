@@ -19,12 +19,12 @@ jobs:
     outputs:
       plan: ${{steps.list-ci.outputs.plan}}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         ref: ${{github.event.pull_request.head.sha || github.sha}}
     - name: Enumerate CI plans
       id: list-ci
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
           const script = require('./scripts/enumerate-ci.js')
@@ -49,7 +49,7 @@ jobs:
       artifact-name: "artifact-${{matrix.plan.name}}"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: haskell-actions/setup@v2
         with:
           ghc-version: ${{env.ghc}}
@@ -58,7 +58,7 @@ jobs:
           ghcup-release-channel: https://ghc.gitlab.haskell.org/ghcup-metadata/ghcup-nightlies-0.0.7.yaml
 
       - name: Restore Cache ~/.cabal/store
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         env:
           cache-name: cache-cabal-store
         with:
@@ -68,7 +68,7 @@ jobs:
             build-${{ runner.os }}-${{env.cache-name}}-${{env.ghc}}-
 
       - name: Cache dist-newstyle
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-dist-newstyle
         with:
@@ -86,7 +86,7 @@ jobs:
         run: |
           ${CABAL} v2-build all --only-dependencies
       - name: Save Cache ~/.cabal/store
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         env:
           cache-name: cache-cabal-store
         with:
@@ -99,7 +99,7 @@ jobs:
       - name: Collect binaries
         run: ./scripts/collect-artifacts.sh artifacts
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: binaries-${{env.ghc}}-${{runner.os}}
           path: artifacts.tar.zst
@@ -127,8 +127,8 @@ jobs:
     - name: Fail when Corresponding Build wouldn't succeeded
       if: ${{needs.build.result != 'success' }}
       run: echo "BUILD FAILED" >&2; exit 1
-    - uses: actions/checkout@v3
-    - uses: actions/download-artifact@v3
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v4
       id: download
       with:
         name: binaries-${{env.ghc}}-${{runner.os}}
