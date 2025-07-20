@@ -3,30 +3,31 @@
       -dsuppress-type-applications
       -dsuppress-module-prefixes -dsuppress-type-signatures
       -dsuppress-uniques #-}
-module Control.Subcategory.FunctorSpec where
-import Control.Subcategory.Functor
 
-import qualified Data.ByteString           as BS
-import           Data.Hashable             (Hashable)
-import           Data.HashSet              (HashSet)
-import qualified Data.HashSet              as HS
-import           Data.IntSet               (IntSet)
-import qualified Data.IntSet               as IS
-import qualified Data.Primitive.Array      as A
-import qualified Data.Primitive.PrimArray  as PA
-import qualified Data.Primitive.SmallArray as SA
-import qualified Data.Sequence             as Seq
-import           Data.Set                  (Set)
-import qualified Data.Set                  as Set
-import qualified Data.Text                 as T
-import qualified Data.Vector               as V
-import qualified Data.Vector.Primitive     as P
-import qualified Data.Vector.Storable      as S
-import qualified Data.Vector.Unboxed       as U
-import           Data.Word                 (Word8)
-import           Shared
-import           Test.Inspection
-import           Test.Tasty
+module Control.Subcategory.FunctorSpec where
+
+import Control.Subcategory.Functor
+import Data.ByteString qualified as BS
+import Data.HashSet (HashSet)
+import Data.HashSet qualified as HS
+import Data.Hashable (Hashable)
+import Data.IntSet (IntSet)
+import Data.IntSet qualified as IS
+import Data.Primitive.Array qualified as A
+import Data.Primitive.PrimArray qualified as PA
+import Data.Primitive.SmallArray qualified as SA
+import Data.Sequence qualified as Seq
+import Data.Set (Set)
+import Data.Set qualified as Set
+import Data.Text qualified as T
+import Data.Vector qualified as V
+import Data.Vector.Primitive qualified as P
+import Data.Vector.Storable qualified as S
+import Data.Vector.Unboxed qualified as U
+import Data.Word (Word8)
+import Shared
+import Test.Inspection
+import Test.Tasty
 import Test.Tasty.ExpectedFailure (expectFailBecause)
 
 cmap_list :: (a -> b) -> [a] -> [b]
@@ -98,19 +99,19 @@ map_Maybe = fmap
 cmap_Set :: (Ord b) => (Int -> b) -> Set Int -> Set b
 cmap_Set = cmap
 
-map_Set :: Ord b => (Int -> b) -> Set Int -> Set b
+map_Set :: (Ord b) => (Int -> b) -> Set Int -> Set b
 map_Set = Set.map
 
-map_Set_eta :: Ord b => (Int -> b) -> Set Int -> Set b
+map_Set_eta :: (Ord b) => (Int -> b) -> Set Int -> Set b
 map_Set_eta a b = Set.map a b
 
-cmap_HashSet
-  :: (Hashable b, Eq b)
-  => (String -> Maybe b) -> HashSet String -> HashSet (Maybe b)
+cmap_HashSet ::
+  (Hashable b, Eq b) =>
+  (String -> Maybe b) -> HashSet String -> HashSet (Maybe b)
 cmap_HashSet = cmap
 
-map_HashSet
-  :: (Hashable b, Eq b) => (String -> Maybe b) -> HashSet String -> HashSet (Maybe b)
+map_HashSet ::
+  (Hashable b, Eq b) => (String -> Maybe b) -> HashSet String -> HashSet (Maybe b)
 {-# INLINE map_HashSet #-}
 map_HashSet = HS.map
 
@@ -130,108 +131,125 @@ map_Text :: (Char -> Char) -> T.Text -> T.Text
 map_Text = T.map
 
 test_cmap :: TestTree
-test_cmap = testGroup "cmap"
-  [ testGroup "list"
-    [ $(inspecting "has the same representation as Prelude.map"
-        $ 'cmap_list ==- 'map_list
-      )
+test_cmap =
+  testGroup
+    "cmap"
+    [ testGroup
+        "list"
+        [ $( inspecting "has the same representation as Prelude.map" $
+               'cmap_list ==- 'map_list
+           )
+        ]
+    , testGroup
+        "Seq"
+        [ $( inspecting "has the same representation as fmap" $
+               'cmap_seq ==- 'map_seq
+           )
+        , $( inspecting "has no instance dictionary" $
+               hasNoTypeClasses 'cmap_seq
+           )
+        ]
+    , testGroup
+        "IntSet"
+        [ $( inspecting "has the same representation as IntSet.map" $
+               'cmap_intset ==- 'map_intset
+           )
+        ]
+    , testGroup
+        "BVector"
+        [ $( inspecting "has the same representation as V.map" $
+               'cmap_bvec ==- 'map_bvec
+           )
+        ]
+    , testGroup
+        "UVector"
+        [ $( inspecting "has the same representation as U.map" $
+               'cmap_uvec ==- 'map_uvec
+           )
+        ]
+    , testGroup
+        "SVector"
+        [ $( inspecting "has the same representation as S.map" $
+               'cmap_svec ==- 'map_svec
+           )
+        ]
+    , testGroup
+        "PVector"
+        [ $( inspecting "has the same representation as P.map" $
+               'cmap_pvec ==- 'map_pvec
+           )
+        ]
+    , testGroup
+        "SmallArray"
+        [ $( inspecting "has the same representation as fmap" $
+               'cmap_smallarray ==- 'map_smallarray
+           )
+        , $( inspecting "has no instance dictionary" $
+               hasNoTypeClasses 'cmap_smallarray
+           )
+        ]
+    , testGroup
+        "Array"
+        [ $( inspecting "has the same representation as fmap" $
+               'cmap_array ==- 'map_array
+           )
+        , $( inspecting "has no instance dictionary" $
+               hasNoTypeClasses 'cmap_array
+           )
+        ]
+    , testGroup
+        "PrimArray"
+        [ $( inspecting "has the same representation as PA.mapPrimArray" $
+               'cmap_primarray ==- 'map_primarray
+           )
+        , $( inspecting "has no instance dictionary" $
+               hasNoTypeClasses 'cmap_primarray
+           )
+        ]
+    , testGroup
+        "Maybe"
+        [ $( inspecting "has the same representation as fmap" $
+               'cmap_Maybe ==- 'map_Maybe
+           )
+        , $( inspecting "has no instance dictionary" $
+               hasNoTypeClasses 'cmap_Maybe
+           )
+        ]
+    , testGroup
+        "Set"
+        [ $( inspecting "has the same representation as Set.map" $
+               'cmap_Set ==- 'map_Set_eta
+           )
+        , $( inspecting "has no instance dictionary except Ord" $
+               'cmap_Set `hasNoTypeClassesExcept` [''Ord]
+           )
+        ]
+    , testGroup
+        "HashSet"
+        [ $( inspecting "has the same representation as HS.map, if the first argument is concrete" $
+               'cmap_HashSet ==- 'map_HashSet
+           )
+        , $( inspecting "has no instance dictionary except EQ and Hashable" $
+               'cmap_HashSet `hasNoTypeClassesExcept` [''Eq, ''Hashable]
+           )
+        ]
+    , testGroup
+        "WrapMono ByteString"
+        [ $( inspecting "has the same representation as Data.ByteString.map" $
+               'cmap_MonoBS ==- 'map_BS
+           )
+        , $( inspecting "has no instance dictionary" $
+               hasNoTypeClasses 'cmap_MonoBS
+           )
+        ]
+    , testGroup
+        "WrapMono Text"
+        [ (if ghcVer >= GHC9_6 then expectFailBecause "GHC >= 9.6 does aggeressive inlining somehow" else id)
+            $( inspecting "has the same representation as Data.Text.map" $
+                 'cmap_MonoText ==- 'map_Text
+             )
+        , $( inspecting "has no instance dictionary" $
+               hasNoTypeClasses 'cmap_MonoText
+           )
+        ]
     ]
-  , testGroup "Seq"
-    [ $(inspecting "has the same representation as fmap"
-        $ 'cmap_seq ==- 'map_seq
-      )
-    , $(inspecting "has no instance dictionary"
-      $ hasNoTypeClasses 'cmap_seq
-      )
-    ]
-  , testGroup "IntSet"
-    [ $(inspecting "has the same representation as IntSet.map"
-        $ 'cmap_intset ==- 'map_intset
-      )
-    ]
-  , testGroup "BVector"
-    [ $(inspecting "has the same representation as V.map"
-        $ 'cmap_bvec ==- 'map_bvec
-      )
-    ]
-  , testGroup "UVector"
-    [ $(inspecting "has the same representation as U.map"
-        $ 'cmap_uvec ==- 'map_uvec
-      )
-    ]
-  , testGroup "SVector"
-    [ $(inspecting "has the same representation as S.map"
-        $ 'cmap_svec ==- 'map_svec
-      )
-    ]
-  , testGroup "PVector"
-    [ $(inspecting "has the same representation as P.map"
-        $ 'cmap_pvec ==- 'map_pvec
-      )
-    ]
-  , testGroup "SmallArray"
-    [ $(inspecting "has the same representation as fmap"
-        $ 'cmap_smallarray ==- 'map_smallarray
-      )
-    , $(inspecting "has no instance dictionary"
-      $ hasNoTypeClasses 'cmap_smallarray
-      )
-    ]
-  , testGroup "Array"
-    [ $(inspecting "has the same representation as fmap"
-        $ 'cmap_array ==- 'map_array
-      )
-    , $(inspecting "has no instance dictionary"
-      $ hasNoTypeClasses 'cmap_array
-      )
-    ]
-  , testGroup "PrimArray"
-    [ $(inspecting "has the same representation as PA.mapPrimArray"
-        $ 'cmap_primarray ==- 'map_primarray
-      )
-    , $(inspecting "has no instance dictionary"
-      $ hasNoTypeClasses 'cmap_primarray
-      )
-    ]
-  , testGroup "Maybe"
-    [ $(inspecting "has the same representation as fmap"
-      $ 'cmap_Maybe ==- 'map_Maybe
-      )
-    , $(inspecting "has no instance dictionary"
-      $ hasNoTypeClasses 'cmap_Maybe
-      )
-    ]
-  , testGroup "Set"
-    [ $(inspecting "has the same representation as Set.map"
-      $ 'cmap_Set ==- if ghcVer >= GHC9_0 then 'map_Set_eta else 'map_Set
-      )
-    , $(inspecting "has no instance dictionary except Ord"
-      $ 'cmap_Set `hasNoTypeClassesExcept` [''Ord]
-      )
-    ]
-  , testGroup "HashSet"
-    [ $(inspecting "has the same representation as HS.map, if the first argument is concrete"
-      $ 'cmap_HashSet ==- 'map_HashSet
-      )
-    , $(inspecting "has no instance dictionary except EQ and Hashable"
-      $ 'cmap_HashSet `hasNoTypeClassesExcept` [''Eq, ''Hashable]
-      )
-    ]
-  , testGroup "WrapMono ByteString"
-    [ $(inspecting "has the same representation as Data.ByteString.map"
-      $ 'cmap_MonoBS ==- 'map_BS
-      )
-    , $(inspecting "has no instance dictionary"
-      $ hasNoTypeClasses 'cmap_MonoBS
-      )
-    ]
-  , testGroup "WrapMono Text"
-    [ (if ghcVer >= GHC9_6 then expectFailBecause "GHC >= 9.6 does aggeressive inlining somehow" else id)
-      $(inspecting "has the same representation as Data.Text.map"
-      $ 'cmap_MonoText ==- 'map_Text
-      )
-    , $(inspecting "has no instance dictionary"
-      $ hasNoTypeClasses 'cmap_MonoText
-      )
-    ]
-  ]
