@@ -244,7 +244,7 @@ test_cmap =
         ]
     , testGroup
         "WrapMono Text"
-        [ (if ghcVer >= GHC9_6 then expectFailBecause "GHC >= 9.6 does aggeressive inlining somehow" else id)
+        [ expectFailBecause "GHC >= 9.6 does aggeressive inlining somehow"
             $( inspecting "has the same representation as Data.Text.map" $
                  'cmap_MonoText ==- 'map_Text
              )
