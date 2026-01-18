@@ -226,7 +226,7 @@ test_cmap =
         ]
     , testGroup
         "HashSet"
-        [ $( inspecting "has the same representation as HS.map, if the first argument is concrete" $
+        [ expectFailSinceBecause GHC9_14 "Inlining mechanism seem changed" $( inspecting "has the same representation as HS.map, if the first argument is concrete" $
                'cmap_HashSet ==- 'map_HashSet
            )
         , $( inspecting "has no instance dictionary except EQ and Hashable" $

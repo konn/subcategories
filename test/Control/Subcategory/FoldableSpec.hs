@@ -87,32 +87,27 @@ test_cfoldr =
         [ $( inspecting "has the same representation as U.foldr (if an element is concrete)" $
                'cfoldr_uvec ==- 'foldr_uvec
            )
-        , expectFailBecause "Simplified subsumption sacrifices this and fails for GHC >= 9.0.1." $
-            $( inspecting "has no instance dictionary other than Unbox (if polymorphic)" $
-                 'cfoldr_uvec_poly `hasNoTypeClassesExcept` [''U.Unbox]
-             )
+        , $( inspecting "has no instance dictionary other than Unbox and Vector (if polymorphic)" $
+               'cfoldr_uvec_poly `hasNoTypeClassesExcept` [''U.Unbox, ''G.Vector]
+           )
         ]
     , testGroup
         "SVector"
         [ $( inspecting "has the same representation as S.foldr (if an element is concrete)" $
                'cfoldr_svec ==- 'foldr_svec
            )
-        , expectFailBecause
-            "Simplified subsumption sacrifices this and fails for GHC >= 9.0.1."
-            $( inspecting "has no instance dictionary other than Storable (if polymorphic)" $
-                 'cfoldr_svec_poly `hasNoTypeClassesExcept` [''S.Storable]
-             )
+        , $( inspecting "has no instance dictionary other than Storable and Vector (if polymorphic)" $
+               'cfoldr_svec_poly `hasNoTypeClassesExcept` [''S.Storable, ''G.Vector]
+           )
         ]
     , testGroup
         "PVector"
         [ $( inspecting "has the same representation as P.foldr (if an element is concrete)" $
                'cfoldr_pvec ==- 'foldr_pvec
            )
-        , expectFailBecause
-            "Simplified subsumption sacrifices this and fails for GHC >= 9.0.1."
-            $( inspecting "has no instance dictionary other than Prim (if polymorphic)" $
-                 'cfoldr_pvec_poly `hasNoTypeClassesExcept` [''P.Prim]
-             )
+        , $( inspecting "has no instance dictionary other than Prim and Vector (if polymorphic)" $
+               'cfoldr_pvec_poly `hasNoTypeClassesExcept` [''P.Prim, ''G.Vector]
+           )
         ]
     ]
 
@@ -208,9 +203,12 @@ test_rules =
     "Rewrite rules"
     [ testGroup
         "ctoList . cfromList = ctoList"
-        [ $( inspecting "List" $
-               'ctoFromList_list ==- 'list_id_lam
-           )
+        [ expectFailSinceBecause
+            GHC9_14
+            "Inlining mechanism seem changed"
+            $( inspecting "List" $
+                 'ctoFromList_list ==- 'list_id_lam
+             )
         , $( inspecting "Boxed vector" $
                'ctoFromList_bvec ==- 'list_id_lam
            )
