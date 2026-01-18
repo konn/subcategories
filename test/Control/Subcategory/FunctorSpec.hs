@@ -226,7 +226,7 @@ test_cmap =
         ]
     , testGroup
         "HashSet"
-        [ $( inspecting "has the same representation as HS.map, if the first argument is concrete" $
+        [ expectFailSinceBecause GHC9_14 "Inlining mechanism seem changed" $( inspecting "has the same representation as HS.map, if the first argument is concrete" $
                'cmap_HashSet ==- 'map_HashSet
            )
         , $( inspecting "has no instance dictionary except EQ and Hashable" $
@@ -244,7 +244,7 @@ test_cmap =
         ]
     , testGroup
         "WrapMono Text"
-        [ (if ghcVer >= GHC9_6 then expectFailBecause "GHC >= 9.6 does aggeressive inlining somehow" else id)
+        [ expectFailBecause "GHC >= 9.6 does aggeressive inlining somehow"
             $( inspecting "has the same representation as Data.Text.map" $
                  'cmap_MonoText ==- 'map_Text
              )
