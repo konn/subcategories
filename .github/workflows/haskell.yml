@@ -2,16 +2,16 @@ name: Haskell CI
 
 on:
   push:
-    branches: 
-    - master
-    - release
+    branches:
+      - master
+      - release
   pull_request:
     branches:
-    - master
-    - release
+      - master
+      - release
   schedule:
     - cron: "00 13 * * *"
-    
+
 jobs:
   enumerate:
     name: Generate Build Matrix Dynamically
@@ -19,16 +19,16 @@ jobs:
     outputs:
       plan: ${{steps.list-ci.outputs.plan}}
     steps:
-    - uses: actions/checkout@v4
-      with:
-        ref: ${{github.event.pull_request.head.sha || github.sha}}
-    - name: Enumerate CI plans
-      id: list-ci
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const script = require('./scripts/enumerate-ci.js')
-          await script({github, context, core, glob, io, require})
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{github.event.pull_request.head.sha || github.sha}}
+      - name: Enumerate CI plans
+        id: list-ci
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const script = require('./scripts/enumerate-ci.js')
+            await script({github, context, core, glob, io, require})
 
   build:
     needs: [enumerate]
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Haskell GHC ${{ matrix.plan.ghc }} Build
     env:
-      cabal-version: 3.10.2.0
+      cabal-version: 3.16.1.0
       CABAL: "cabal --project-file=${{matrix.plan.path}}"
       ghc: ${{matrix.plan.ghc}}
       project-file: ${{matrix.plan.path}}
@@ -113,7 +113,7 @@ jobs:
       fail-fast: false
     runs-on: ubuntu-latest
     env:
-      cabal-version: 3.10.2.0
+      cabal-version: 3.16.1.0
       CABAL: "cabal --project-file=${{matrix.plan.path}}"
       ghc: ${{matrix.plan.ghc}}
       project-file: ${{matrix.plan.path}}
@@ -124,27 +124,27 @@ jobs:
     continue-on-error: ${{matrix.plan.is_head}}
 
     steps:
-    - name: Fail when Corresponding Build wouldn't succeeded
-      if: ${{needs.build.result != 'success' }}
-      run: echo "BUILD FAILED" >&2; exit 1
-    - uses: actions/checkout@v4
-    - uses: actions/download-artifact@v4
-      id: download
-      with:
-        name: binaries-${{env.ghc}}-${{runner.os}}
-    - name: Extract and Run All Tests
-      run: |
-        set -euxo pipefail
-        DL_PATH=${{steps.download.outputs.download-path}}
-        unzstd "${DL_PATH}/artifacts.tar.zst"
-        tar xvf "${DL_PATH}/artifacts.tar"
-        set +x
-        find artifacts/tests -type f | while read -r TEST; do
-          echo "Executing: ${TEST}"
-          "${TEST}"
-        done
-        
-        find artifacts/exes -type f | while read -r TEST; do
-          echo "Executing: ${TEST}"
-          "${TEST}"
-        done
+      - name: Fail when Corresponding Build wouldn't succeeded
+        if: ${{needs.build.result != 'success' }}
+        run: echo "BUILD FAILED" >&2; exit 1
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        id: download
+        with:
+          name: binaries-${{env.ghc}}-${{runner.os}}
+      - name: Extract and Run All Tests
+        run: |
+          set -euxo pipefail
+          DL_PATH=${{steps.download.outputs.download-path}}
+          unzstd "${DL_PATH}/artifacts.tar.zst"
+          tar xvf "${DL_PATH}/artifacts.tar"
+          set +x
+          find artifacts/tests -type f | while read -r TEST; do
+            echo "Executing: ${TEST}"
+            "${TEST}"
+          done
+
+          find artifacts/exes -type f | while read -r TEST; do
+            echo "Executing: ${TEST}"
+            "${TEST}"
+          done
